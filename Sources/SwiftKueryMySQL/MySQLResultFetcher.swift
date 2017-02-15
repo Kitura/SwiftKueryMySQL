@@ -26,13 +26,9 @@ import Foundation
 /// An implementation of query result fetcher.
 
 public class MySQLResultFetcher: ResultFetcher {
-    private static let dateFormatter = getDateFormatter(format: "yyyy-MM-dd")
-    private static let timeFormatter = getDateFormatter(format: "HH:mm:ss")
-    private static let dateTimeFormatter = getDateFormatter(format: "yyyy-MM-dd HH:mm:ss")
-
     // private let encoding: String.Encoding?
-    private var statement: UnsafeMutablePointer<MYSQL_STMT>?
-    private let bindPtr: UnsafeMutablePointer<MYSQL_BIND>
+    private let statement: UnsafeMutablePointer<MYSQL_STMT>
+    private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
     private let binds: [MYSQL_BIND]
 
     private let fieldNames: [String]
@@ -58,20 +54,18 @@ public class MySQLResultFetcher: ResultFetcher {
     }
 
     private func close() {
-        guard statement != nil else {
-            return
-        }
+        if let bindPtr = bindPtr {
+            self.bindPtr = nil
 
-        mysql_stmt_close(statement)
-        statement = nil
+            for bind in binds {
+                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                bind.length.deallocate(capacity: 1)
+                bind.is_null.deallocate(capacity: 1)
+                bind.error.deallocate(capacity: 1)
+            }
+            bindPtr.deallocate(capacity: binds.count)
 
-        bindPtr.deallocate(capacity: binds.count)
-
-        for bind in binds {
-            bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: MemoryLayout<Int8>.alignment)
-            bind.length.deallocate(capacity: 1)
-            bind.is_null.deallocate(capacity: 1)
-            bind.error.deallocate(capacity: 1)
+            mysql_stmt_close(statement)
         }
     }
 
@@ -113,14 +107,25 @@ public class MySQLResultFetcher: ResultFetcher {
     }
 
     private func buildRow() -> [Any?]? {
-        guard mysql_stmt_fetch(statement) == 0 else {
+        let fetchStatus = mysql_stmt_fetch(statement)
+        if fetchStatus == MYSQL_NO_DATA {
+            return nil
+        }
+
+        if fetchStatus == 1 {
+            // use a logger or add throws to the fetchNext signature?
+            print("Error fetching row: \(String(cString: mysql_stmt_error(statement)))")
             return nil
         }
 
         var row = [Any?]()
-        for i in 0 ..< binds.count {
-            let bind = binds[i]
-            guard let buffer = bind.buffer else { // UnsafeMutableRawPointer
+        for bind in binds {
+            guard let buffer = bind.buffer else {
+                row.append("bind buffer not set")
+                continue
+            }
+
+            guard bind.is_null.pointee == 0 else {
                 row.append(nil)
                 continue
             }
@@ -144,18 +149,29 @@ public class MySQLResultFetcher: ResultFetcher {
                  MYSQL_TYPE_STRING,
                  MYSQL_TYPE_VAR_STRING:
                 row.append(String(cString: buffer.assumingMemoryBound(to: CChar.self)))
-                // row.append(String(cString: buffer.bindMemory(to: CChar.self, capacity: bind.length)))
             case MYSQL_TYPE_TINY_BLOB,
                  MYSQL_TYPE_BLOB,
                  MYSQL_TYPE_MEDIUM_BLOB,
                  MYSQL_TYPE_LONG_BLOB,
                  MYSQL_TYPE_BIT:
-                row.append(nil) // TODO
-            case MYSQL_TYPE_TIME,
-                 MYSQL_TYPE_DATE,
-                 MYSQL_TYPE_DATETIME,
+                var length = Int(bind.length.pointee)
+                if fetchStatus == MYSQL_DATA_TRUNCATED {
+                    let bufferLength = Int(bind.buffer_length)
+                    if length > bufferLength {
+                        length = bufferLength
+                    }
+                }
+                row.append(Data(bytes: buffer, count: length))
+            case MYSQL_TYPE_TIME:
+                let time = buffer.load(as: MYSQL_TIME.self)
+                row.append("\(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")
+            case MYSQL_TYPE_DATE:
+                let time = buffer.load(as: MYSQL_TIME.self)
+                row.append("\(time.year)-\(pad(time.month))-\(pad(time.day))")
+            case MYSQL_TYPE_DATETIME,
                  MYSQL_TYPE_TIMESTAMP:
-                row.append(nil) // MYSQL_TIME
+                let time = buffer.load(as: MYSQL_TIME.self)
+                row.append("\(time.year)-\(pad(time.month))-\(pad(time.day)) \(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")
             default:
                 row.append("Unhandled enum_field_type: \(type.rawValue)")
             }
@@ -164,9 +180,7 @@ public class MySQLResultFetcher: ResultFetcher {
         return row
     }
 
-    static func getDateFormatter(format: String) -> DateFormatter {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = format
-        return dateFormatter
+    private func pad(_ uInt: UInt32) -> String {
+        return String(format: "%02u", uInt)
     }
 }

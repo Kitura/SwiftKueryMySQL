@@ -243,12 +243,14 @@ public class MySQLConnection: Connection {
     }
 
     private static func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
+        let size = getSize(field: field)
+
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
-        bind.buffer_length = field.length
+        bind.buffer_length = UInt(size)
         bind.is_unsigned = 0
 
-        bind.buffer = UnsafeMutableRawPointer.allocate(bytes: Int(field.length), alignedTo: MemoryLayout<Int8>.alignment)
+        bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
         bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
@@ -292,5 +294,30 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
+    }
+
+    static func getSize(field: MYSQL_FIELD) -> Int {
+        switch field.type {
+        case MYSQL_TYPE_TINY:
+            return MemoryLayout<CChar>.size
+        case MYSQL_TYPE_SHORT:
+            return MemoryLayout<CShort>.size
+        case MYSQL_TYPE_INT24,
+             MYSQL_TYPE_LONG:
+            return MemoryLayout<CInt>.size
+        case MYSQL_TYPE_LONGLONG:
+            return MemoryLayout<CLongLong>.size
+        case MYSQL_TYPE_FLOAT:
+            return MemoryLayout<CFloat>.size
+        case MYSQL_TYPE_DOUBLE:
+            return MemoryLayout<CDouble>.size
+        case MYSQL_TYPE_TIME,
+             MYSQL_TYPE_DATE,
+             MYSQL_TYPE_DATETIME,
+             MYSQL_TYPE_TIMESTAMP:
+            return MemoryLayout<MYSQL_TIME>.size
+        default:
+            return Int(field.length)
+        }
     }
 }
