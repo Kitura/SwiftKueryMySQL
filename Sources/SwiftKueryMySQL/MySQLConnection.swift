@@ -42,7 +42,11 @@ public class MySQLConnection: Connection {
     private var connection: UnsafeMutablePointer<MYSQL>?
 
     /// The `QueryBuilder` with MySQL specific substitutions.
-    public let queryBuilder = MySQLConnection.createQuryBuilder()
+    public let queryBuilder: QueryBuilder = {
+        let queryBuilder = QueryBuilder(anyOnSubquerySupported: true)
+        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH"])
+        return queryBuilder
+    }()
 
     /// Initialize an instance of MySQLConnection.
     ///
@@ -108,12 +112,6 @@ public class MySQLConnection: Connection {
         }
     }
 
-    private static func createQuryBuilder() -> QueryBuilder {
-        let queryBuilder = QueryBuilder(anyOnSubquerySupported: true)
-        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH"])
-        return queryBuilder
-    }
-
     /// Return a String representation of the query.
     ///
     /// - Parameter query: The query.
@@ -123,41 +121,38 @@ public class MySQLConnection: Connection {
         return try query.build(queryBuilder: queryBuilder)
     }
 
+    /// Execute a query.
+    ///
+    /// - Parameter query: The query to execute.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
+        if let query = build(query: query, onCompletion: onCompletion) {
+            executeQuery(query: query, onCompletion: onCompletion)
+        }
+    }
+
     /// Execute a query with parameters.
     ///
     /// - Parameter query: The query to execute.
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        do {
-            let mysqlQuery = try query.build(queryBuilder: queryBuilder)
-            executeQueryWithParameters(query: mysqlQuery, parameters: parameters, onCompletion: onCompletion)
-        }
-        catch QueryError.syntaxError(let error) {
-            onCompletion(.error(QueryError.syntaxError(error)))
-        }
-        catch {
-            onCompletion(.error(QueryError.syntaxError("Failed to build the query")))
+        if let query = build(query: query, onCompletion: onCompletion) {
+            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
         }
     }
-    
-    /// Execute a query.
+
+    /// Execute a query with named parameters.
     ///
     /// - Parameter query: The query to execute.
+    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
-        do {
-            let mysqlQuery = try query.build(queryBuilder: queryBuilder)
-            executeQuery(query: mysqlQuery, onCompletion: onCompletion)
-        }
-        catch QueryError.syntaxError(let error) {
-            onCompletion(.error(QueryError.syntaxError(error)))
-        }
-        catch {
-            onCompletion(.error(QueryError.syntaxError("Failed to build the query")))
+    public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        if let query = build(query: query, onCompletion: onCompletion) {
+            executeQuery(query: query, namedParameters: parameters, onCompletion: onCompletion)
         }
     }
-    
+
     /// Execute a raw query.
     ///
     /// - Parameter query: A String with the query to execute.
@@ -165,42 +160,100 @@ public class MySQLConnection: Connection {
     public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
         executeQuery(query: raw, onCompletion: onCompletion)
     }
-    
+
     /// Execute a raw query with parameters.
     ///
     /// - Parameter query: A String with the query to execute.
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQueryWithParameters(query: raw, parameters: parameters, onCompletion: onCompletion)
+        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
+    }
+
+    /// Execute a raw query with named parameters.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        executeQuery(query: raw, namedParameters: parameters, onCompletion: onCompletion)
+    }
+
+    private func build(query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> String? {
+        do {
+            return try query.build(queryBuilder: queryBuilder)
+        } catch QueryError.syntaxError(let error) {
+            onCompletion(.error(QueryError.syntaxError(error)))
+        } catch {
+            onCompletion(.error(QueryError.syntaxError("Failed to build the query")))
+        }
+
+        return nil
+    }
+
+    private func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
+        return String(cString: mysql_stmt_error(statement))
     }
 
     private func getError() -> String {
         return String(cString: mysql_error(connection))
     }
 
-    private func executeQuery(query: String, onCompletion: @escaping ((QueryResult) -> ())) {
+    private func handleError(_ statement: UnsafeMutablePointer<MYSQL_STMT>, onCompletion: @escaping ((QueryResult) -> ())) {
+        onCompletion(.error(QueryError.databaseError(getError(statement))))
+        mysql_stmt_close(statement)
+    }
+
+    private func executeQuery(query: String, parameters: [Any]? = nil, namedParameters: [String:Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+
         guard let statement = mysql_stmt_init(connection) else {
-            onCompletion(.error(QueryError.databaseError(getError())))
+            onCompletion(.error(QueryError.connection(getError())))
             return
         }
 
         guard mysql_stmt_prepare(statement, query, UInt(query.utf8.count)) == 0 else {
-            onCompletion(.error(QueryError.syntaxError(getError())))
+            onCompletion(.error(QueryError.syntaxError(getError(statement))))
             mysql_stmt_close(statement)
             return
         }
 
+        if let parameters = parameters {
+            let paramBindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
+            defer {
+                // deallocate binds
+            }
+            guard mysql_stmt_bind_param(statement, paramBindPtr) == 0 else {
+                handleError(statement, onCompletion: onCompletion)
+                return
+            }
+            /*
+             var parameterData = [UnsafePointer<Int8>?]()
+             // At the moment we only create string parameters. Binary parameters should be added.
+             for parameter in parameters {
+             let value = AnyCollection("\(parameter)".utf8CString)
+             let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(value.count))
+             for (index, byte) in value.enumerated() {
+             pointer[index] = byte
+             }
+             parameterData.append(pointer)
+             }
+             _ = parameterData.withUnsafeBufferPointer { buffer in
+             PQsendQueryParams(connection, query, Int32(parameters.count), nil, buffer.isEmpty ? nil : buffer.baseAddress, nil, nil, 0)
+             }
+             */
+        }
+
+        if let namedParameters = namedParameters {
+        }
+
         guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
-            onCompletion(.error(QueryError.databaseError(getError())))
-            mysql_stmt_close(statement)
+            handleError(statement, onCompletion: onCompletion)
             return
         }
 
         guard let mySqlFields = mysql_fetch_fields(resultMetadata) else {
-            onCompletion(.error(QueryError.databaseError(getError())))
             mysql_free_result(resultMetadata)
-            mysql_stmt_close(statement)
+            handleError(statement, onCompletion: onCompletion)
             return
         }
 
@@ -222,14 +275,12 @@ public class MySQLConnection: Connection {
         }
 
         guard mysql_stmt_bind_result(statement, bindPtr) == 0 else {
-            onCompletion(.error(QueryError.databaseError(getError())))
-            mysql_stmt_close(statement)
+            handleError(statement, onCompletion: onCompletion)
             return
         }
 
         guard mysql_stmt_execute(statement) == 0 else {
-            onCompletion(.error(QueryError.databaseError(getError())))
-            mysql_stmt_close(statement)
+            handleError(statement, onCompletion: onCompletion)
             return
         }
 
@@ -256,44 +307,6 @@ public class MySQLConnection: Connection {
         bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
 
         return bind
-    }
-
-    private func executeQueryWithParameters(query: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-/*
-        var parameterData = [UnsafePointer<Int8>?]()
-        // At the moment we only create string parameters. Binary parameters should be added.
-        for parameter in parameters {
-            let value = AnyCollection("\(parameter)".utf8CString)
-            let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(value.count))
-            for (index, byte) in value.enumerated() {
-                pointer[index] = byte
-            }
-            parameterData.append(pointer)
-        }
-        _ = parameterData.withUnsafeBufferPointer { buffer in
-            PQsendQueryParams(connection, query, Int32(parameters.count), nil, buffer.isEmpty ? nil : buffer.baseAddress, nil, nil, 0)
-        }
-        PQsetSingleRowMode(connection)
-        processQueryResult(query: query, onCompletion: onCompletion)
-*/
-    }
-
-    /// Execute a query with parameters.
-    ///
-    /// - Parameter query: The query to execute.
-    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
-    }
-
-    /// Execute a raw query with parameters.
-    ///
-    /// - Parameter query: A String with the query to execute.
-    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
     static func getSize(field: MYSQL_FIELD) -> Int {

@@ -114,7 +114,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("Error fetching row: \(String(cString: mysql_stmt_error(statement)))")
+            print("Error fetching row: \(getError())")
             return nil
         }
 
@@ -182,5 +182,9 @@ public class MySQLResultFetcher: ResultFetcher {
 
     private func pad(_ uInt: UInt32) -> String {
         return String(format: "%02u", uInt)
+    }
+
+    private func getError() -> String {
+        return String(cString: mysql_stmt_error(statement))
     }
 }
