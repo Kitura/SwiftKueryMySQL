@@ -32,15 +32,17 @@ public class MySQLResultFetcher: ResultFetcher {
     private let binds: [MYSQL_BIND]
 
     private let fieldNames: [String]
+    private let copyBlobData: Bool
 
     private var row: [Any?]?
     private var hasMoreRows = true
 
-    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, bindPtr: UnsafeMutablePointer<MYSQL_BIND>, binds: [MYSQL_BIND], fieldNames: [String]) {
+    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, bindPtr: UnsafeMutablePointer<MYSQL_BIND>, binds: [MYSQL_BIND], fieldNames: [String], copyBlobData: Bool) {
         self.statement = statement
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
+        self.copyBlobData = copyBlobData
 
         self.row = buildRow()
         if row == nil {
@@ -148,20 +150,17 @@ public class MySQLResultFetcher: ResultFetcher {
             case MYSQL_TYPE_NEWDECIMAL,
                  MYSQL_TYPE_STRING,
                  MYSQL_TYPE_VAR_STRING:
-                row.append(String(cString: buffer.assumingMemoryBound(to: CChar.self)))
+                row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: String.Encoding.utf8, freeWhenDone: false))
             case MYSQL_TYPE_TINY_BLOB,
                  MYSQL_TYPE_BLOB,
                  MYSQL_TYPE_MEDIUM_BLOB,
                  MYSQL_TYPE_LONG_BLOB,
                  MYSQL_TYPE_BIT:
-                var length = Int(bind.length.pointee)
-                if fetchStatus == MYSQL_DATA_TRUNCATED {
-                    let bufferLength = Int(bind.buffer_length)
-                    if length > bufferLength {
-                        length = bufferLength
-                    }
+                if copyBlobData {
+                    row.append(Data(bytes: buffer, count: getLength(bind)))
+                } else {
+                    row.append(Data(bytesNoCopy: buffer, count: getLength(bind), deallocator: Data.Deallocator.none))
                 }
-                row.append(Data(bytes: buffer, count: length))
             case MYSQL_TYPE_TIME:
                 let time = buffer.load(as: MYSQL_TIME.self)
                 row.append("\(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")
@@ -178,6 +177,10 @@ public class MySQLResultFetcher: ResultFetcher {
         }
 
         return row
+    }
+
+    private func getLength(_ bind: MYSQL_BIND) -> Int {
+        return Int(bind.length.pointee > bind.buffer_length ? bind.buffer_length : bind.length.pointee)
     }
 
     private func pad(_ uInt: UInt32) -> String {
