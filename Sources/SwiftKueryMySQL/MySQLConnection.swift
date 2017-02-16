@@ -224,29 +224,29 @@ public class MySQLConnection: Connection {
         }
 
         if let parameters = parameters {
-            let paramBindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
-            defer {
-                // deallocate binds
+            var binds = [MYSQL_BIND]()
+            for parameter in parameters {
+                binds.append(getBind(parameter: parameter))
             }
-            guard mysql_stmt_bind_param(statement, paramBindPtr) == 0 else {
+            let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
+            for i in 0 ..< binds.count {
+                bindPtr[i] = binds[i]
+            }
+
+            defer {
+                for bind in binds {
+                    bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                    bind.length.deallocate(capacity: 1)
+                    bind.is_null.deallocate(capacity: 1)
+                    bind.error.deallocate(capacity: 1)
+                }
+                bindPtr.deallocate(capacity: binds.count)
+            }
+
+            guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
                 handleError(statement, onCompletion: onCompletion)
                 return
             }
-            /*
-             var parameterData = [UnsafePointer<Int8>?]()
-             // At the moment we only create string parameters. Binary parameters should be added.
-             for parameter in parameters {
-             let value = AnyCollection("\(parameter)".utf8CString)
-             let pointer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(value.count))
-             for (index, byte) in value.enumerated() {
-             pointer[index] = byte
-             }
-             parameterData.append(pointer)
-             }
-             _ = parameterData.withUnsafeBufferPointer { buffer in
-             PQsendQueryParams(connection, query, Int32(parameters.count), nil, buffer.isEmpty ? nil : buffer.baseAddress, nil, nil, 0)
-             }
-             */
         }
 
         if let namedParameters = namedParameters {
@@ -269,7 +269,7 @@ public class MySQLConnection: Connection {
 
         for i in 0 ..< numFields {
             let field = mySqlFields[i]
-            binds.append(MySQLConnection.getBind(field: field))
+            binds.append(getBind(field: field))
             fieldNames.append(String(cString: field.name))
         }
 
@@ -299,8 +299,8 @@ public class MySQLConnection: Connection {
         onCompletion(.resultSet(ResultSet(resultFetcher)))
     }
 
-    private static func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
-        let size = getSize(field: field)
+    private func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
+        let size = MySQLConnection.getSize(field: field)
 
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
@@ -310,6 +310,29 @@ public class MySQLConnection: Connection {
         bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+
+        return bind
+    }
+
+    private func getBind<T>(parameter: T?) -> MYSQL_BIND {
+        let (type, size) = MySQLConnection.getTypeAndSize(parameter: parameter)
+
+        var bind = MYSQL_BIND()
+        bind.buffer_type = type
+        bind.buffer_length = UInt(size)
+        bind.is_unsigned = 0
+
+        let buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
+        buffer.initializeMemory(as: T.Type, to: parameter)
+        bind.buffer = buffer
+
+        bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
+        bind.length.initialize(to: size)
+
+        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.is_null.initialize(to: (parameter == nil ? 0 : 1))
+
         bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
 
         return bind
