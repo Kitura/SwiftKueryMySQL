@@ -27,7 +27,7 @@ import Foundation
 
 public class MySQLResultFetcher: ResultFetcher {
     // private let encoding: String.Encoding?
-    private let statement: UnsafeMutablePointer<MYSQL_STMT>
+    private var statement: UnsafeMutablePointer<MYSQL_STMT>
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
     private let binds: [MYSQL_BIND]
 
@@ -37,7 +37,42 @@ public class MySQLResultFetcher: ResultFetcher {
     private var row: [Any?]?
     private var hasMoreRows = true
 
-    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, bindPtr: UnsafeMutablePointer<MYSQL_BIND>, binds: [MYSQL_BIND], fieldNames: [String], copyBlobData: Bool) {
+    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, copyBlobData: Bool) throws {
+
+        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
+            throw MySQLResultFetcher.initError(statement)
+        }
+
+        guard let fields = mysql_fetch_fields(resultMetadata) else {
+            mysql_free_result(resultMetadata)
+            throw MySQLResultFetcher.initError(statement)
+        }
+
+        let numFields = Int(mysql_num_fields(resultMetadata))
+        var binds = [MYSQL_BIND]()
+        var fieldNames = [String]()
+
+        for i in 0 ..< numFields {
+            let field = fields[i]
+            binds.append(MySQLConnection.getBind(field: field))
+            fieldNames.append(String(cString: field.name))
+        }
+
+        mysql_free_result(resultMetadata)
+
+        let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
+        for i in 0 ..< binds.count {
+            bindPtr[i] = binds[i]
+        }
+
+        guard mysql_stmt_bind_result(statement, bindPtr) == 0 else {
+            throw MySQLResultFetcher.initError(statement, bindPtr: bindPtr, binds: binds)
+        }
+
+        guard mysql_stmt_execute(statement) == 0 else {
+            throw MySQLResultFetcher.initError(statement, bindPtr: bindPtr, binds: binds)
+        }
+
         self.statement = statement
         self.bindPtr = bindPtr
         self.binds = binds
@@ -45,7 +80,7 @@ public class MySQLResultFetcher: ResultFetcher {
         self.copyBlobData = copyBlobData
 
         self.row = buildRow()
-        if row == nil {
+        if self.row == nil {
             close()
             return nil
         }
@@ -53,6 +88,28 @@ public class MySQLResultFetcher: ResultFetcher {
 
     deinit {
         close()
+    }
+
+    private static func initError(_ statement: UnsafeMutablePointer<MYSQL_STMT>, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> QueryError {
+
+        defer {
+            mysql_stmt_close(statement)
+        }
+
+        if let binds = binds {
+            for bind in binds {
+                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                bind.length.deallocate(capacity: 1)
+                bind.is_null.deallocate(capacity: 1)
+                bind.error.deallocate(capacity: 1)
+            }
+
+            if let bindPtr = bindPtr {
+                bindPtr.deallocate(capacity: binds.count)
+            }
+        }
+
+        return QueryError.databaseError(getError(statement))
     }
 
     private func close() {
@@ -116,7 +173,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("Error fetching row: \(getError())")
+            print("Error fetching row: \(MySQLResultFetcher.getError(statement))")
             return nil
         }
 
@@ -187,7 +244,7 @@ public class MySQLResultFetcher: ResultFetcher {
         return String(format: "%02u", uInt)
     }
 
-    private func getError() -> String {
+    private static func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
         return String(cString: mysql_stmt_error(statement))
     }
 }

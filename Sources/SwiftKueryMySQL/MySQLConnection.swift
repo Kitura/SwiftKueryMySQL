@@ -211,6 +211,20 @@ public class MySQLConnection: Connection {
     }
 
     private func executeQuery(query: String, parameters: [Any]? = nil, namedParameters: [String:Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+        if var parameters = parameters {
+            withUnsafePointer(to: &parameters) { parametersPtr in
+                executeImpl(query: query, parametersPtr: parametersPtr, onCompletion: onCompletion)
+            }
+        } else if var namedParameters = namedParameters {
+            withUnsafePointer(to: &namedParameters) { namedParametersPtr in
+                executeImpl(query: query, namedParametersPtr: namedParametersPtr, onCompletion: onCompletion)
+            }
+        } else {
+            executeImpl(query: query, onCompletion: onCompletion)
+        }
+    }
+
+    private func executeImpl(query: String, parametersPtr: UnsafePointer<[Any]>? = nil, namedParametersPtr: UnsafePointer<[String:Any]>? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
 
         guard let statement = mysql_stmt_init(connection) else {
             onCompletion(.error(QueryError.connection(getError())))
@@ -223,24 +237,35 @@ public class MySQLConnection: Connection {
             return
         }
 
-        if let parameters = parameters {
-            var binds = [MYSQL_BIND]()
-            for parameter in parameters {
-                binds.append(getBind(parameter: parameter))
-            }
-            let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
-            for i in 0 ..< binds.count {
-                bindPtr[i] = binds[i]
+        var binds = [MYSQL_BIND]()
+        var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
+
+        defer {
+            for bind in binds {
+                print("dealloc \(String(bytesNoCopy: bind.buffer, length: Int(bind.length.pointee), encoding: String.Encoding.utf8, freeWhenDone: false))")
+                //print("dealloc \(bind.buffer.load(as: CInt.self))")
+                bind.length.deallocate(capacity: 1)
+                bind.is_null.deallocate(capacity: 1)
+                bind.error.deallocate(capacity: 1)
             }
 
-            defer {
-                for bind in binds {
-                    bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
-                    bind.length.deallocate(capacity: 1)
-                    bind.is_null.deallocate(capacity: 1)
-                    bind.error.deallocate(capacity: 1)
-                }
+            if let bindPtr = bindPtr {
                 bindPtr.deallocate(capacity: binds.count)
+            }
+        }
+
+        if let parametersPtr = parametersPtr {
+            for i in 0 ..< parametersPtr.pointee.count {
+                var parameter = parametersPtr.pointee[i]
+                binds.append(MySQLConnection.getBind(parameter: parameter, ptr: &parameter))
+            }
+            bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
+            for i in 0 ..< binds.count {
+                bindPtr![i] = binds[i]
+                //print("alloc \(binds[i].buffer.load(as: CInt.self)) \(binds[i].buffer_length) \(binds[i].length.pointee)")
+                print("alloc \(String(bytesNoCopy: binds[i].buffer, length: Int(binds[i].length.pointee), encoding: String.Encoding.utf8, freeWhenDone: false))")
+                //let x = binds[i].buffer.assumingMemoryBound(to: CChar.self)
+                //print("alloc \(String(cString: x))")
             }
 
             guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
@@ -249,58 +274,22 @@ public class MySQLConnection: Connection {
             }
         }
 
-        if let namedParameters = namedParameters {
+        if let namedParametersPtr = namedParametersPtr {
         }
 
-        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
-            handleError(statement, onCompletion: onCompletion)
-            return
+        do {
+            if let resultFetcher = try MySQLResultFetcher(statement: statement, copyBlobData: copyBlobData) {
+                onCompletion(.resultSet(ResultSet(resultFetcher)))
+            } else {
+                onCompletion(.successNoData)
+            }
+        } catch {
+            onCompletion(.error(error))
         }
-
-        guard let mySqlFields = mysql_fetch_fields(resultMetadata) else {
-            mysql_free_result(resultMetadata)
-            handleError(statement, onCompletion: onCompletion)
-            return
-        }
-
-        let numFields = Int(mysql_num_fields(resultMetadata))
-        var binds = [MYSQL_BIND]()
-        var fieldNames = [String]()
-
-        for i in 0 ..< numFields {
-            let field = mySqlFields[i]
-            binds.append(getBind(field: field))
-            fieldNames.append(String(cString: field.name))
-        }
-
-        mysql_free_result(resultMetadata)
-
-        let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
-        for i in 0 ..< binds.count {
-            bindPtr[i] = binds[i]
-        }
-
-        guard mysql_stmt_bind_result(statement, bindPtr) == 0 else {
-            handleError(statement, onCompletion: onCompletion)
-            return
-        }
-
-        guard mysql_stmt_execute(statement) == 0 else {
-            handleError(statement, onCompletion: onCompletion)
-            return
-        }
-
-        guard let resultFetcher = MySQLResultFetcher(statement: statement, bindPtr: bindPtr, binds: binds, fieldNames: fieldNames, copyBlobData: copyBlobData) else {
-            onCompletion(.successNoData)
-            mysql_stmt_close(statement)
-            return
-        }
-
-        onCompletion(.resultSet(ResultSet(resultFetcher)))
     }
 
-    private func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
-        let size = MySQLConnection.getSize(field: field)
+    static func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
+        let size = getSize(field: field)
 
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
@@ -315,23 +304,25 @@ public class MySQLConnection: Connection {
         return bind
     }
 
-    private func getBind<T>(parameter: T?) -> MYSQL_BIND {
-        let (type, size) = MySQLConnection.getTypeAndSize(parameter: parameter)
+    static func getBind<T>(parameter: T?, ptr: UnsafeMutablePointer<T>) -> MYSQL_BIND {
+        let (type, size) = getTypeAndSize(parameter: parameter)
 
         var bind = MYSQL_BIND()
         bind.buffer_type = type
         bind.buffer_length = UInt(size)
         bind.is_unsigned = 0
 
-        let buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
-        buffer.initializeMemory(as: T.Type, to: parameter)
-        bind.buffer = buffer
+        if parameter != nil {
+            bind.buffer = UnsafeMutableRawPointer(ptr)
+        } else {
+            bind.buffer = nil
+        }
 
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.length.initialize(to: size)
+        bind.length.initialize(to: UInt(size))
 
         bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.is_null.initialize(to: (parameter == nil ? 0 : 1))
+        bind.is_null.initialize(to: (parameter == nil ? 1 : 0))
 
         bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
 
@@ -360,6 +351,38 @@ public class MySQLConnection: Connection {
             return MemoryLayout<MYSQL_TIME>.size
         default:
             return Int(field.length)
+        }
+    }
+
+    static func getTypeAndSize<T>(parameter: T?) -> (enum_field_types, Int) {
+        guard let parameter = parameter else {
+            return (MYSQL_TYPE_NULL, 1)
+        }
+
+        switch parameter {
+        case is CChar:
+            return (MYSQL_TYPE_TINY, MemoryLayout<CChar>.size)
+        case is CShort:
+            return (MYSQL_TYPE_SHORT, MemoryLayout<CShort>.size)
+        case is CInt,
+             is Int:
+            return (MYSQL_TYPE_LONG, MemoryLayout<CInt>.size)
+        case is CLongLong:
+            return (MYSQL_TYPE_LONGLONG, MemoryLayout<CLongLong>.size)
+        case is CFloat:
+            return (MYSQL_TYPE_FLOAT, MemoryLayout<CFloat>.size)
+        case is CDouble:
+            return (MYSQL_TYPE_DOUBLE, MemoryLayout<CDouble>.size)
+        case is MYSQL_TIME:
+            return (MYSQL_TYPE_DATETIME, MemoryLayout<MYSQL_TIME>.size)
+        case is String:
+            let size = (parameter as! String).characters.count
+            return (MYSQL_TYPE_STRING, size)
+        case is Data:
+            let size = (parameter as! Data).count
+            return (MYSQL_TYPE_BLOB, size)
+        default:
+            return (MYSQL_TYPE_NULL, 1)
         }
     }
 }
