@@ -44,7 +44,7 @@ public class MySQLConnection: Connection {
 
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
-        let queryBuilder = QueryBuilder(anyOnSubquerySupported: true)
+        let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true)
         queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH"])
         return queryBuilder
     }()
@@ -154,9 +154,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, namedParameters: parameters, onCompletion: onCompletion)
-        }
+        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
     /// Execute a raw query.
@@ -182,7 +180,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, namedParameters: parameters, onCompletion: onCompletion)
+        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
     private func build(query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> String? {
@@ -210,7 +208,7 @@ public class MySQLConnection: Connection {
         mysql_stmt_close(statement)
     }
 
-    private func executeQuery(query: String, parameters: [Any]? = nil, namedParameters: [String:Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    private func executeQuery(query: String, parameters: [Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
 
         guard let statement = mysql_stmt_init(connection) else {
             onCompletion(.error(QueryError.connection(getError())))
@@ -253,15 +251,29 @@ public class MySQLConnection: Connection {
             }
         }
 
-        if let namedParameters = namedParameters {
+        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
+            // non-query statement (insert, update, delete)
+            guard mysql_stmt_execute(statement) == 0 else {
+                handleError(statement, onCompletion: onCompletion)
+                return
+            }
+            let affectedRows = mysql_stmt_affected_rows(statement)
+            mysql_stmt_close(statement)
+            onCompletion(.success("\(affectedRows) rows affected"))
+            return
+        }
+
+        defer {
+            mysql_free_result(resultMetadata)
         }
 
         do {
-            if let resultFetcher = try MySQLResultFetcher(statement: statement, copyBlobData: copyBlobData) {
+            if let resultFetcher = try MySQLResultFetcher(statement: statement, resultMetadata: resultMetadata, copyBlobData: copyBlobData) {
                 onCompletion(.resultSet(ResultSet(resultFetcher)))
             } else {
                 onCompletion(.successNoData)
             }
+            onCompletion(.success(""))
         } catch {
             onCompletion(.error(error))
         }

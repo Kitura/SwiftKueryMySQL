@@ -37,14 +37,8 @@ public class MySQLResultFetcher: ResultFetcher {
     private var row: [Any?]?
     private var hasMoreRows = true
 
-    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, copyBlobData: Bool) throws {
-
-        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
-            throw MySQLResultFetcher.initError(statement)
-        }
-
+    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>, copyBlobData: Bool) throws {
         guard let fields = mysql_fetch_fields(resultMetadata) else {
-            mysql_free_result(resultMetadata)
             throw MySQLResultFetcher.initError(statement)
         }
 
@@ -57,8 +51,6 @@ public class MySQLResultFetcher: ResultFetcher {
             binds.append(MySQLConnection.getOutputBind(field))
             fieldNames.append(String(cString: field.name))
         }
-
-        mysql_free_result(resultMetadata)
 
         let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
         for i in 0 ..< binds.count {
