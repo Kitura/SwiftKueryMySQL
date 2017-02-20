@@ -211,20 +211,6 @@ public class MySQLConnection: Connection {
     }
 
     private func executeQuery(query: String, parameters: [Any]? = nil, namedParameters: [String:Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
-        if var parameters = parameters {
-            withUnsafePointer(to: &parameters) { parametersPtr in
-                executeImpl(query: query, parametersPtr: parametersPtr, onCompletion: onCompletion)
-            }
-        } else if var namedParameters = namedParameters {
-            withUnsafePointer(to: &namedParameters) { namedParametersPtr in
-                executeImpl(query: query, namedParametersPtr: namedParametersPtr, onCompletion: onCompletion)
-            }
-        } else {
-            executeImpl(query: query, onCompletion: onCompletion)
-        }
-    }
-
-    private func executeImpl(query: String, parametersPtr: UnsafePointer<[Any]>? = nil, namedParametersPtr: UnsafePointer<[String:Any]>? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
 
         guard let statement = mysql_stmt_init(connection) else {
             onCompletion(.error(QueryError.connection(getError())))
@@ -242,11 +228,9 @@ public class MySQLConnection: Connection {
 
         defer {
             for bind in binds {
-                print("dealloc \(String(bytesNoCopy: bind.buffer, length: Int(bind.length.pointee), encoding: String.Encoding.utf8, freeWhenDone: false))")
-                //print("dealloc \(bind.buffer.load(as: CInt.self))")
+                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
                 bind.length.deallocate(capacity: 1)
                 bind.is_null.deallocate(capacity: 1)
-                bind.error.deallocate(capacity: 1)
             }
 
             if let bindPtr = bindPtr {
@@ -254,18 +238,13 @@ public class MySQLConnection: Connection {
             }
         }
 
-        if let parametersPtr = parametersPtr {
-            for i in 0 ..< parametersPtr.pointee.count {
-                var parameter = parametersPtr.pointee[i]
-                binds.append(MySQLConnection.getBind(parameter: parameter, ptr: &parameter))
+        if let parameters = parameters {
+            for parameter in parameters {
+                binds.append(MySQLConnection.getInputBind(parameter))
             }
             bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
             for i in 0 ..< binds.count {
                 bindPtr![i] = binds[i]
-                //print("alloc \(binds[i].buffer.load(as: CInt.self)) \(binds[i].buffer_length) \(binds[i].length.pointee)")
-                print("alloc \(String(bytesNoCopy: binds[i].buffer, length: Int(binds[i].length.pointee), encoding: String.Encoding.utf8, freeWhenDone: false))")
-                //let x = binds[i].buffer.assumingMemoryBound(to: CChar.self)
-                //print("alloc \(String(cString: x))")
             }
 
             guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
@@ -274,7 +253,7 @@ public class MySQLConnection: Connection {
             }
         }
 
-        if let namedParametersPtr = namedParametersPtr {
+        if let namedParameters = namedParameters {
         }
 
         do {
@@ -288,7 +267,7 @@ public class MySQLConnection: Connection {
         }
     }
 
-    static func getBind(field: MYSQL_FIELD) -> MYSQL_BIND {
+    static func getOutputBind(_ field: MYSQL_FIELD) -> MYSQL_BIND {
         let size = getSize(field: field)
 
         var bind = MYSQL_BIND()
@@ -304,27 +283,51 @@ public class MySQLConnection: Connection {
         return bind
     }
 
-    static func getBind<T>(parameter: T?, ptr: UnsafeMutablePointer<T>) -> MYSQL_BIND {
-        let (type, size) = getTypeAndSize(parameter: parameter)
+    static func getInputBind<T>(_ parameter: T?) -> MYSQL_BIND {
+        let size: Int
+        let buffer: UnsafeMutableRawPointer?
 
-        var bind = MYSQL_BIND()
-        bind.buffer_type = type
-        bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
-
-        if parameter != nil {
-            bind.buffer = UnsafeMutableRawPointer(ptr)
+        if let parameter = parameter {
+            if parameter is String {
+                let collection = (parameter as! String).utf8
+                size = collection.count
+                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+                typedBuffer.initialize(from: collection)
+                buffer = UnsafeMutableRawPointer(typedBuffer)
+            } else if parameter is [UInt8] {
+                let collection = parameter as! [UInt8]
+                size = collection.count
+                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+                typedBuffer.initialize(from: collection)
+                buffer = UnsafeMutableRawPointer(typedBuffer)
+            } else if parameter is Data {
+                let data = parameter as! Data
+                size = data.count
+                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+                data.copyBytes(to: typedBuffer, count: size)
+                buffer = UnsafeMutableRawPointer(typedBuffer)
+            } else {
+                size = MemoryLayout<T>.size
+                let typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: 1)
+                typedBuffer.initialize(to: parameter)
+                buffer = UnsafeMutableRawPointer(typedBuffer)
+            }
         } else {
-            bind.buffer = nil
+            size = 0
+            buffer = nil
         }
 
+        var bind = MYSQL_BIND()
+        bind.buffer_type = getType(parameter: parameter)
+        bind.buffer_length = UInt(size)
+        bind.is_unsigned = (parameter is UnsignedInteger ? 1 : 0)
+
+        bind.buffer = buffer
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         bind.length.initialize(to: UInt(size))
 
         bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
         bind.is_null.initialize(to: (parameter == nil ? 1 : 0))
-
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
 
         return bind
     }
@@ -354,35 +357,36 @@ public class MySQLConnection: Connection {
         }
     }
 
-    static func getTypeAndSize<T>(parameter: T?) -> (enum_field_types, Int) {
+    static func getType(parameter: Any?) -> enum_field_types {
         guard let parameter = parameter else {
-            return (MYSQL_TYPE_NULL, 1)
+            return MYSQL_TYPE_NULL
         }
 
         switch parameter {
-        case is CChar:
-            return (MYSQL_TYPE_TINY, MemoryLayout<CChar>.size)
-        case is CShort:
-            return (MYSQL_TYPE_SHORT, MemoryLayout<CShort>.size)
-        case is CInt,
-             is Int:
-            return (MYSQL_TYPE_LONG, MemoryLayout<CInt>.size)
-        case is CLongLong:
-            return (MYSQL_TYPE_LONGLONG, MemoryLayout<CLongLong>.size)
+        case is Int8,
+             is UInt8:
+            return MYSQL_TYPE_TINY
+        case is Int16,
+             is UInt16:
+            return MYSQL_TYPE_SHORT
+        case is Int32,
+             is UInt32:
+            return MYSQL_TYPE_LONG
+        case is Integer:       // any other integer types
+            return MYSQL_TYPE_LONGLONG
         case is CFloat:
-            return (MYSQL_TYPE_FLOAT, MemoryLayout<CFloat>.size)
+            return MYSQL_TYPE_FLOAT
         case is CDouble:
-            return (MYSQL_TYPE_DOUBLE, MemoryLayout<CDouble>.size)
+            return MYSQL_TYPE_DOUBLE
         case is MYSQL_TIME:
-            return (MYSQL_TYPE_DATETIME, MemoryLayout<MYSQL_TIME>.size)
+            return MYSQL_TYPE_DATETIME
         case is String:
-            let size = (parameter as! String).characters.count
-            return (MYSQL_TYPE_STRING, size)
-        case is Data:
-            let size = (parameter as! Data).count
-            return (MYSQL_TYPE_BLOB, size)
+            return MYSQL_TYPE_STRING
+        case is Data,
+             is [UInt8]:
+            return MYSQL_TYPE_BLOB
         default:
-            return (MYSQL_TYPE_NULL, 1)
+            return MYSQL_TYPE_DOUBLE
         }
     }
 }

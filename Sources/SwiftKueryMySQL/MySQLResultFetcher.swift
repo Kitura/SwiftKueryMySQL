@@ -54,7 +54,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         for i in 0 ..< numFields {
             let field = fields[i]
-            binds.append(MySQLConnection.getBind(field: field))
+            binds.append(MySQLConnection.getOutputBind(field))
             fieldNames.append(String(cString: field.name))
         }
 
