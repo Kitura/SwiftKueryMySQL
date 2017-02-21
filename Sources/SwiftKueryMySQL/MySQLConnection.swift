@@ -30,7 +30,7 @@ public class MySQLConnection: Connection {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
 
-    private let semaphore = DispatchSemaphoreWrapper()
+    private let lock = Lock()
 
     private let host: String
     private let user: String
@@ -96,7 +96,7 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
-        semaphore.sync {
+        lock.sync {
             if connection == nil {
                 connection = mysql_init(nil)
             }
@@ -117,7 +117,7 @@ public class MySQLConnection: Connection {
 
     /// Close the connection to the database.
     public func closeConnection() {
-        semaphore.sync {
+        lock.sync {
             if connection != nil {
                 mysql_close(connection)
                 connection = nil
@@ -140,7 +140,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            semaphore.sync {
+            lock.sync {
                 executeQuery(query: query, onCompletion: onCompletion)
             }
         }
@@ -153,7 +153,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            semaphore.sync {
+            lock.sync {
                 executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
             }
         }
@@ -164,7 +164,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: A String with the query to execute.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        semaphore.sync {
+        lock.sync {
             executeQuery(query: raw, onCompletion: onCompletion)
         }
     }
@@ -175,7 +175,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        semaphore.sync {
+        lock.sync {
             executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
         }
     }
@@ -424,13 +424,14 @@ public class MySQLConnection: Connection {
     }
 }
 
-class DispatchSemaphoreWrapper {
-    let semaphore = DispatchSemaphore(value: 1)
+class Lock {
+    private let lock = NSRecursiveLock()
+    // need a reentrant mutex as sync functions can callback other sync functions
 
     func sync<T>(execute work: () throws -> T) rethrows -> T {
-        semaphore.wait()
+        lock.lock()
         defer {
-            semaphore.signal()
+            lock.unlock()
         }
         return try work()
     }
