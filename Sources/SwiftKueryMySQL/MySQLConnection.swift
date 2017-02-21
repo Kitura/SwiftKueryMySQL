@@ -30,6 +30,8 @@ public class MySQLConnection: Connection {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
 
+    private let semaphore = DispatchSemaphoreWrapper()
+
     private let host: String
     private let user: String
     private let password: String
@@ -87,34 +89,39 @@ public class MySQLConnection: Connection {
 
     deinit {
         closeConnection()
+        mysql_thread_end()
     }
 
     /// Establish a connection with the database.
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
-        if connection == nil {
-            connection = mysql_init(nil)
-        }
-
-        if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
-            if mysql_set_character_set(connection, characterSet) == 0 {
-                print("Set characterSet to: \(characterSet)")
-            } else {
-                let defaultCharSet = String(cString: mysql_character_set_name(connection))
-                print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
+        semaphore.sync {
+            if connection == nil {
+                connection = mysql_init(nil)
             }
-            onCompletion(nil) // success
-        } else {
-            onCompletion(QueryError.connection(getError()))
+
+            if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
+                if mysql_set_character_set(connection, characterSet) == 0 {
+                    print("Set characterSet to: \(characterSet)")
+                } else {
+                    let defaultCharSet = String(cString: mysql_character_set_name(connection))
+                    print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
+                }
+                onCompletion(nil) // success
+            } else {
+                onCompletion(QueryError.connection(getError()))
+            }
         }
     }
 
     /// Close the connection to the database.
     public func closeConnection() {
-        if connection != nil {
-            mysql_close(connection)
-            connection = nil
+        semaphore.sync {
+            if connection != nil {
+                mysql_close(connection)
+                connection = nil
+            }
         }
     }
 
@@ -133,7 +140,9 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, onCompletion: onCompletion)
+            semaphore.sync {
+                executeQuery(query: query, onCompletion: onCompletion)
+            }
         }
     }
 
@@ -144,10 +153,34 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
+            semaphore.sync {
+                executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
+            }
         }
     }
 
+    /// Execute a raw query.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        semaphore.sync {
+            executeQuery(query: raw, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a raw query with parameters.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter parameters: An array of the parameters.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        semaphore.sync {
+            executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
+        }
+    }
+
+    /// NOT supported in MySQL
     /// Execute a query with named parameters.
     ///
     /// - Parameter query: The query to execute.
@@ -157,23 +190,7 @@ public class MySQLConnection: Connection {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
-    /// Execute a raw query.
-    ///
-    /// - Parameter query: A String with the query to execute.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, onCompletion: onCompletion)
-    }
-
-    /// Execute a raw query with parameters.
-    ///
-    /// - Parameter query: A String with the query to execute.
-    /// - Parameter parameters: An array of the parameters.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
-    }
-
+    /// NOT supported in MySQL
     /// Execute a raw query with named parameters.
     ///
     /// - Parameter query: A String with the query to execute.
@@ -209,6 +226,10 @@ public class MySQLConnection: Connection {
     }
 
     private func executeQuery(query: String, parameters: [Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+        guard let connection = connection else {
+            onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
+            return
+        }
 
         guard let statement = mysql_stmt_init(connection) else {
             onCompletion(.error(QueryError.connection(getError())))
@@ -400,5 +421,17 @@ public class MySQLConnection: Connection {
         default:
             return MYSQL_TYPE_DOUBLE
         }
+    }
+}
+
+class DispatchSemaphoreWrapper {
+    let semaphore = DispatchSemaphore(value: 1)
+
+    func sync<T>(execute work: () throws -> T) rethrows -> T {
+        semaphore.wait()
+        defer {
+            semaphore.signal()
+        }
+        return try work()
     }
 }
