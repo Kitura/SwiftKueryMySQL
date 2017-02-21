@@ -60,7 +60,7 @@ class TestAlias: XCTestCase {
                             XCTAssertEqual(result.success, true, "INSERT failed")
                             XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
                             
-                            let s1 = Select(t.a.as("\"fruit name\""), t.b.as("number"), from: t)
+                            let s1 = Select(t.a.as("fruit name"), t.b.as("number"), from: t)
                             executeQuery(query: s1, connection: connection) { result, rows in
                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
@@ -79,7 +79,7 @@ class TestAlias: XCTestCase {
                                     XCTAssertEqual(resultSet.titles[0], "a", "Wrong column name: \(resultSet.titles[0]) instead of 'a'")
                                     XCTAssertEqual(resultSet.titles[1], "b", "Wrong column name: \(resultSet.titles[1]) instead of 'b'")
                                     
-                                    let t2 = t.as("\"t 2\"")
+                                    let t2 = t.as("t 2")
                                     let s3 = Select(t2.a, from: t2)
                                     executeQuery(query: s3, connection: connection) { result, rows in
                                         XCTAssertEqual(result.success, true, "SELECT failed")

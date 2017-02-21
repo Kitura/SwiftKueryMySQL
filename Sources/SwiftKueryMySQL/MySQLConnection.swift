@@ -294,7 +294,6 @@ public class MySQLConnection: Connection {
             } else {
                 onCompletion(.successNoData)
             }
-            onCompletion(.success(""))
         } catch {
             onCompletion(.error(error))
         }
