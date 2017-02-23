@@ -146,8 +146,12 @@ class TestJoin: XCTestCase {
                                                                 XCTAssertEqual(rows!.count, 8, "SELECT returned wrong number of rows: \(rows!.count) instead of 8")
                                                                 
                                                                 let s4 = Select(from: t1)
-                                                                    .rawJoin("FULL JOIN", t2)
+                                                                    .leftJoin(t2)
                                                                     .using(t1.b)
+                                                                    .union(Select(from: t1)
+                                                                    .rawJoin("RIGHT JOIN", t2)
+                                                                    .using(t1.b)
+                                                                    .where(t1.b.isNull()))
                                                                 executeQuery(query: s4, connection: connection) { result, rows in
                                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")

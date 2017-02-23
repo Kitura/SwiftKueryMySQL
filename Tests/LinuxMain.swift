@@ -9,5 +9,4 @@ XCTMain([
      testCase(TestParameters.allTests),
      testCase(TestJoin.allTests),
      testCase(TestSubquery.allTests),
-     testCase(TestWith.allTests),
 ])

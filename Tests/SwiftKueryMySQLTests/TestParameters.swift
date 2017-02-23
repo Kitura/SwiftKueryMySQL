@@ -68,9 +68,9 @@ class TestParameters: XCTestCase {
                                 XCTAssertEqual(rows![0][0]! as! String, "apple", "Wrong value in row 0 column 0: \(rows![0][0]) instead of 'apple'")
                                 XCTAssertEqual(rows![1][0]! as! String, "apricot", "Wrong value in row 0 column 0: \(rows![1][0]) instead of 'apricot'")
                                 XCTAssertEqual(rows![2][0]! as! String, "banana", "Wrong value in row 0 column 0: \(rows![2][0]) instead of 'banana'")
-                                XCTAssertEqual(rows![0][1]! as! String, "10", "Wrong value in row 0 column 0: \(rows![0][1]) instead of 10")
-                                XCTAssertEqual(rows![1][1]! as! String, "3", "Wrong value in row 0 column 0: \(rows![1][1]) instead of 3")
-                                XCTAssertEqual(rows![2][1]! as! String, "-8", "Wrong value in row 0 column 0: \(rows![2][1]) instead of -8")
+                                XCTAssertEqual(rows![0][1]! as! Int32, 10, "Wrong value in row 0 column 0: \(rows![0][1]) instead of 10")
+                                XCTAssertEqual(rows![1][1]! as! Int32, 3, "Wrong value in row 0 column 0: \(rows![1][1]) instead of 3")
+                                XCTAssertEqual(rows![2][1]! as! Int32, -8, "Wrong value in row 0 column 0: \(rows![2][1]) instead of -8")
                                 
                                 let u1 = Update(t, set: [(t.a, Parameter()), (t.b, Parameter())], where: t.a == "banana")
                                 executeQueryWithParameters(query: u1, connection: connection, parameters: "peach", 2) { result, rows in
@@ -83,9 +83,9 @@ class TestParameters: XCTestCase {
                                         XCTAssertNotNil(rows, "SELECT returned no rows")
                                         XCTAssertEqual(rows!.count, 3, "SELECT returned wrong number of rows: \(rows!.count) instead of 3")
                                         XCTAssertEqual(rows![2][0]! as! String, "peach", "Wrong value in row 0 column 0: \(rows![2][0]) instead of 'peach'")
-                                        XCTAssertEqual(rows![2][1]! as! String, "2", "Wrong value in row 0 column 0: \(rows![2][1]) instead of 2")
+                                        XCTAssertEqual(rows![2][1]! as! Int32, 2, "Wrong value in row 0 column 0: \(rows![2][1]) instead of 2")
                                         
-                                        let raw = "UPDATE " + t.tableName + " SET a = 'banana', b = $1 WHERE a = $2"
+                                        let raw = "UPDATE " + t.tableName + " SET a = 'banana', b = ? WHERE a = ?"
                                         executeRawQueryWithParameters(raw, connection: connection, parameters: 4, "peach") { result, rows in
                                             XCTAssertEqual(result.success, true, "UPDATE failed")
                                             XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
@@ -96,7 +96,7 @@ class TestParameters: XCTestCase {
                                                 XCTAssertNotNil(rows, "SELECT returned no rows")
                                                 XCTAssertEqual(rows!.count, 3, "SELECT returned wrong number of rows: \(rows!.count) instead of 3")
                                                 XCTAssertEqual(rows![2][0]! as! String, "banana", "Wrong value in row 0 column 0: \(rows![2][0]) instead of 'peach'")
-                                                XCTAssertEqual(rows![2][1]! as! String, "4", "Wrong value in row 0 column 0: \(rows![2][1]) instead of 4")
+                                                XCTAssertEqual(rows![2][1]! as! Int32, 4, "Wrong value in row 0 column 0: \(rows![2][1]) instead of 4")
                                             }
                                         }
                                     }

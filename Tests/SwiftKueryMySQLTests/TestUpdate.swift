@@ -75,18 +75,11 @@ class TestUpdate: XCTestCase {
                                     
                                     let u2 = Update(t, set: [(t.a, "peach"), (t.b, 2)])
                                         .where(t.a == "apple")
-                                        .suffix("RETURNING b")
                                     executeQuery(query: u2, connection: connection) { result, rows in
                                         XCTAssertEqual(result.success, true, "UPDATE failed")
                                         XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
-                                        XCTAssertNotNil(result.asResultSet, "UPDATE returned no rows")
-                                        XCTAssertNotNil(rows, "UPDATE returned no rows")
-                                        let resultSet = result.asResultSet!
-                                        XCTAssertEqual(rows!.count, 2, "UPDATE returned wrong number of rows: \(rows!.count) instead of 2")
-                                        XCTAssertEqual(resultSet.titles[0], "b", "Wrong column name: \(resultSet.titles[0]) instead of b")
-                                        XCTAssertEqual(rows![0][0]! as! String, "2", "Wrong value in row 0 column 0: \(rows![0][0]) instead of 2")
-                                        XCTAssertEqual(rows![1][0]! as! String, "2", "Wrong value in row 1 column 0: \(rows![1][0]) instead of 2")
-                                        
+                                        XCTAssert((result.asValue as! String).contains("2"), "UPDATE affected wrong number of rows: \(result.asValue!)")
+
                                         let s2 = Select(t.a, t.b, from: t)
                                             .where(t.a == "banana")
                                         executeQuery(query: s2, connection: connection) { result, rows in
@@ -95,14 +88,11 @@ class TestUpdate: XCTestCase {
                                             
                                             let d1 = Delete(from: t)
                                                 .where(t.b == "2")
-                                                .suffix("RETURNING b")
                                             executeQuery(query: d1, connection: connection) { result, rows in
                                                 XCTAssertEqual(result.success, true, "DELETE failed")
                                                 XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
-                                                XCTAssertNotNil(result.asResultSet, "DELETE returned no rows")
-                                                XCTAssertNotNil(rows, "DELETE returned no rows")
-                                                XCTAssertEqual(rows!.count, 5, "DELETE returned wrong number of rows: \(rows!.count) instead of 5")
-                                                
+                                                XCTAssert((result.asValue as! String).contains("5"), "DELETE affected wrong number of rows: \(result.asValue!)")
+
                                                 executeQuery(query: s1, connection: connection) { result, rows in
                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
