@@ -42,6 +42,7 @@ public class MySQLConnection: Connection {
     private let copyBlobData: Bool
 
     private var connection: UnsafeMutablePointer<MYSQL>?
+    private var inTransaction = false
 
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
@@ -204,18 +205,21 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter onCompletion: The function to be called when the execution of start transaction command has completed.
     public func startTransaction(onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "START TRANSACTION", inTransaction: false, changeTransactionState: true, errorMessage: "Failed to start the transaction", onCompletion: onCompletion)
     }
 
     /// Commit the current transaction.
     ///
     /// - Parameter onCompletion: The function to be called when the execution of commit transaction command has completed.
     public func commit(onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "COMMIT", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to commit the transaction", onCompletion: onCompletion)
     }
 
     /// Rollback the current transaction.
     ///
     /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
     public func rollback(onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "ROLLBACK", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to rollback the transaction", onCompletion: onCompletion)
     }
 
     /// Create a savepoint.
@@ -223,6 +227,7 @@ public class MySQLConnection: Connection {
     /// - Parameter savepoint: The name to  be given to the created savepoint.
     /// - Parameter onCompletion: The function to be called when the execution of create savepoint command has completed.
     public func create(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to create the savepoint \(savepoint)", onCompletion: onCompletion)
     }
 
     /// Rollback the current transaction to the specified savepoint.
@@ -230,6 +235,7 @@ public class MySQLConnection: Connection {
     /// - Parameter to savepoint: The name of the savepoint to rollback to.
     /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
     public func rollback(to savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "ROLLBACK TO \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to rollback to the savepoint \(savepoint)", onCompletion: onCompletion)
     }
 
     /// Release a savepoint.
@@ -237,6 +243,30 @@ public class MySQLConnection: Connection {
     /// - Parameter savepoint: The name of the savepoint to release.
     /// - Parameter onCompletion: The function to be called when the execution of release savepoint command has completed.
     public func release(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        executeTransaction(command: "RELEASE SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to release the savepoint \(savepoint)", onCompletion: onCompletion)
+    }
+
+    private func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
+
+        guard let connection = connection else {
+            onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
+            return
+        }
+
+        guard self.inTransaction == inTransaction else {
+            let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
+            onCompletion(.error(QueryError.transactionError(error)))
+            return
+        }
+
+        if mysql_query(connection, command) == 0 {
+            if changeTransactionState {
+                self.inTransaction = !self.inTransaction
+            }
+            onCompletion(.successNoData)
+        } else {
+            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
+        }
     }
 
     private func build(query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> String? {
