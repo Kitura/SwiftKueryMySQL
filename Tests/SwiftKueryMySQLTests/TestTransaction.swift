@@ -131,14 +131,14 @@ class TestTransaction: MySQLTest {
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { result in
 
-                connection.startTransaction() { result in
-                    XCTAssertEqual(result.success, true, "Failed to start transaction")
-                    XCTAssertNil(result.asError, "Error in start transaction: \(result.asError!)")
+                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                    XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                    XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
 
-                    executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
-                        XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                        XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
-
+                    connection.startTransaction() { result in
+                        XCTAssertEqual(result.success, true, "Failed to start transaction")
+                        XCTAssertNil(result.asError, "Error in start transaction: \(result.asError!)")
+                        
                         connection.create(savepoint: "spcreate") { result in
                             XCTAssertEqual(result.success, true, "Failed to create savepoint")
                             XCTAssertNil(result.asError, "Error in create savepoint: \(result.asError!)")
@@ -317,13 +317,13 @@ class TestTransaction: MySQLTest {
                     connection.create(savepoint: "spcreate") { result in
                         XCTAssertEqual(result.success, false, "Succeeded to create savepoint without transaction")
 
-                        connection.startTransaction() { result in
-                            XCTAssertEqual(result.success, true, "Failed to start transaction")
-                            XCTAssertNil(result.asError, "Error in start transaction: \(result.asError!)")
+                        executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                            XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                            XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
 
-                            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
-                                XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                                XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+                            connection.startTransaction() { result in
+                                XCTAssertEqual(result.success, true, "Failed to start transaction")
+                                XCTAssertNil(result.asError, "Error in start transaction: \(result.asError!)")
 
                                 connection.create(savepoint: "spcreate") { result in
                                     XCTAssertEqual(result.success, true, "Failed to create savepoint")

@@ -248,24 +248,26 @@ public class MySQLConnection: Connection {
 
     private func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
 
-        guard let connection = connection else {
-            onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
-            return
-        }
-
-        guard self.inTransaction == inTransaction else {
-            let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
-            onCompletion(.error(QueryError.transactionError(error)))
-            return
-        }
-
-        if mysql_query(connection, command) == 0 {
-            if changeTransactionState {
-                self.inTransaction = !self.inTransaction
+        lock.sync {
+            guard let connection = connection else {
+                onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
+                return
             }
-            onCompletion(.successNoData)
-        } else {
-            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
+
+            guard self.inTransaction == inTransaction else {
+                let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
+                onCompletion(.error(QueryError.transactionError(error)))
+                return
+            }
+
+            if mysql_query(connection, command) == 0 {
+                if changeTransactionState {
+                    self.inTransaction = !self.inTransaction
+                }
+                onCompletion(.successNoData)
+            } else {
+                onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
+            }
         }
     }
 
