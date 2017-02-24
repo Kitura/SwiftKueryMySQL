@@ -103,9 +103,7 @@ public class MySQLConnection: Connection {
             }
 
             if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
-                if mysql_set_character_set(connection, characterSet) == 0 {
-                    print("Set characterSet to: \(characterSet)")
-                } else {
+                if mysql_set_character_set(connection, characterSet) != 0 {
                     let defaultCharSet = String(cString: mysql_character_set_name(connection))
                     print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
                 }
