@@ -15,33 +15,7 @@
  **/
 
 import XCTest
-import Foundation
 import SwiftKuery
-
-func read(fileName: String) -> String {
-    // Read in a configuration file into an NSData
-    do {
-        var pathToTests = #file
-        if pathToTests.hasSuffix("CommonUtils.swift") {
-            pathToTests = pathToTests.replacingOccurrences(of: "CommonUtils.swift", with: "")
-        }
-        let fileData = try Data(contentsOf: URL(fileURLWithPath: "\(pathToTests)\(fileName)"))
-        XCTAssertNotNil(fileData, "Failed to read in the \(fileName) file")
-        
-        let resultString = String(data: fileData, encoding: String.Encoding.utf8)
-        
-        guard
-            let resultLiteral = resultString
-            else {
-                XCTFail("Error in \(fileName).")
-                exit(1)
-        }
-        return resultLiteral.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-    } catch {
-        XCTFail("Error in \(fileName).")
-        exit(1)
-    }
-}
 
 func executeQuery(query: Query, connection: Connection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {

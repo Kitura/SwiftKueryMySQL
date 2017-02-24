@@ -16,13 +16,17 @@
 
 import XCTest
 import Dispatch
+import Foundation
 
 import SwiftKuery
 import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
     func performTest(line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
-        let connection = createConnection()
+        guard let connection = createConnection() else {
+            return
+        }
+
         defer {
             connection.closeConnection()
         }
@@ -59,16 +63,43 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func createConnection() -> Connection {
-        let host = read(fileName: "host.txt")
-        let port = Int(read(fileName: "port.txt"))!
-        let username = read(fileName: "username.txt")
-        let password = read(fileName: "password.txt")
-        let database = read(fileName: "database.txt")
+    private func createConnection() -> Connection? {
+        do {
+            let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
+            let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
+            let json = try JSONSerialization.jsonObject(with: data)
 
-        // Create connection with URL
-        // return MySQLConnection(url: URL(string: "mysql://\(username):\(password)@\(host):\(port)/\(database)")!)
+            if let dictionary = json as? [String: String] {
+                let host = dictionary["host"]
+                let username = dictionary["username"]
+                let password = dictionary["password"]
+                let database = dictionary["database"]
+                var port: Int? = nil
+                if let portString = dictionary["port"] {
+                    port = Int(portString)
+                }
 
-        return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
+                let randomBinary: UInt32
+                #if os(Linux)
+                    randomBinary = UInt32(random() % 2)
+                #else
+                    randomBinary = arc4random_uniform(2)
+                #endif
+
+                if randomBinary == 0 {
+                    return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
+                } else {
+                    if let url = URL(string: "mysql://\(username):\(password)@\(host):\(port)/\(database)") {
+                        return MySQLConnection(url: url)
+                    }
+                }
+            } else {
+                XCTFail("Invalid format for connection.json contents: \(json)")
+            }
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
+
+        return nil
     }
 }
