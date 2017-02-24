@@ -89,9 +89,22 @@ class MySQLTest: XCTestCase {
                 if randomBinary == 0 {
                     return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
                 } else {
-                    if let url = URL(string: "mysql://\(username):\(password)@\(host):\(port)/\(database)") {
+                    var urlString = "mysql://"
+                    if let username = username, let password = password {
+                        urlString += "\(username):\(password)@"
+                    }
+                    urlString += host ?? "localhost"
+                    if let port = port {
+                        urlString += ":\(port)"
+                    }
+                    if let database = database {
+                        urlString += "/\(database)"
+                    }
+
+                    if let url = URL(string: urlString) {
                         return MySQLConnection(url: url)
                     }
+                    XCTFail("Invalid URL format: \(urlString)")
                 }
             } else {
                 XCTFail("Invalid format for connection.json contents: \(json)")
