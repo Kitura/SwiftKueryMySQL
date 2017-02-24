@@ -25,7 +25,6 @@ import SwiftKuery
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
 public class MySQLConnection: Connection {
-
     private static let initOnce: () = {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
@@ -48,6 +47,7 @@ public class MySQLConnection: Connection {
     public let queryBuilder: QueryBuilder = {
         let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true)
         queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH"])
+        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter : "`"])
         return queryBuilder
     }()
 
@@ -198,6 +198,45 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
+    }
+
+    /// Start a transaction.
+    ///
+    /// - Parameter onCompletion: The function to be called when the execution of start transaction command has completed.
+    public func startTransaction(onCompletion: @escaping ((QueryResult) -> ())) {
+    }
+
+    /// Commit the current transaction.
+    ///
+    /// - Parameter onCompletion: The function to be called when the execution of commit transaction command has completed.
+    public func commit(onCompletion: @escaping ((QueryResult) -> ())) {
+    }
+
+    /// Rollback the current transaction.
+    ///
+    /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
+    public func rollback(onCompletion: @escaping ((QueryResult) -> ())) {
+    }
+
+    /// Create a savepoint.
+    ///
+    /// - Parameter savepoint: The name to  be given to the created savepoint.
+    /// - Parameter onCompletion: The function to be called when the execution of create savepoint command has completed.
+    public func create(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
+    }
+
+    /// Rollback the current transaction to the specified savepoint.
+    ///
+    /// - Parameter to savepoint: The name of the savepoint to rollback to.
+    /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
+    public func rollback(to savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
+    }
+
+    /// Release a savepoint.
+    ///
+    /// - Parameter savepoint: The name of the savepoint to release.
+    /// - Parameter onCompletion: The function to be called when the execution of release savepoint command has completed.
+    public func release(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
     }
 
     private func build(query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> String? {
