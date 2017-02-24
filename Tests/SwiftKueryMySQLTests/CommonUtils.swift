@@ -1,5 +1,5 @@
 /**
- * Copyright IBM Corporation 2016
+ * Copyright IBM Corporation 2017
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,9 @@
  * limitations under the License.
  **/
 
-#if os(Linux)
-    import Glibc
-#elseif os(OSX)
-    import Darwin
-#endif
-
 import XCTest
 import Foundation
-
 import SwiftKuery
-import SwiftKueryMySQL
 
 func read(fileName: String) -> String {
     // Read in a configuration file into an NSData
@@ -140,20 +132,6 @@ func getNumberOfRows(_ result: ResultSet) -> Int {
 func rowsAsArray(_ result: ResultSet) -> [[Any?]] {
     return result.rows.map{ $0 as [Any?] }
 }
-
-func createConnection() -> MySQLConnection {
-    let host = read(fileName: "host.txt")
-    let port = Int(read(fileName: "port.txt"))!
-    let username = read(fileName: "username.txt")
-    let password = read(fileName: "password.txt")
-    let database = read(fileName: "database.txt")
-
-    // Create connection with URL
-    // return MySQLConnection(url: URL(string: "mysql://\(username):\(password)@\(host):\(port)/\(database)")!)
-    
-    return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
-}
-
 
 // Dummy class for test framework
 class CommonUtils { }
