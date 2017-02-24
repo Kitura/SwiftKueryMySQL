@@ -48,7 +48,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         for i in 0 ..< numFields {
             let field = fields[i]
-            binds.append(MySQLConnection.getOutputBind(field))
+            binds.append(MySQLResultFetcher.getOutputBind(field))
             fieldNames.append(String(cString: field.name))
         }
 
@@ -157,6 +157,47 @@ public class MySQLResultFetcher: ResultFetcher {
         return fieldNames
     }
 
+    private static func getOutputBind(_ field: MYSQL_FIELD) -> MYSQL_BIND {
+        let size = getSize(field: field)
+
+        var bind = MYSQL_BIND()
+        bind.buffer_type = field.type
+        bind.buffer_length = UInt(size)
+        bind.is_unsigned = 0
+
+        bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
+        bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
+        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+
+        return bind
+    }
+
+    private static func getSize(field: MYSQL_FIELD) -> Int {
+        switch field.type {
+        case MYSQL_TYPE_TINY:
+            return MemoryLayout<Int8>.size
+        case MYSQL_TYPE_SHORT:
+            return MemoryLayout<Int16>.size
+        case MYSQL_TYPE_INT24,
+             MYSQL_TYPE_LONG:
+            return MemoryLayout<Int32>.size
+        case MYSQL_TYPE_LONGLONG:
+            return MemoryLayout<Int64>.size
+        case MYSQL_TYPE_FLOAT:
+            return MemoryLayout<Float>.size
+        case MYSQL_TYPE_DOUBLE:
+            return MemoryLayout<Double>.size
+        case MYSQL_TYPE_TIME,
+             MYSQL_TYPE_DATE,
+             MYSQL_TYPE_DATETIME,
+             MYSQL_TYPE_TIMESTAMP:
+            return MemoryLayout<MYSQL_TIME>.size
+        default:
+            return Int(field.length)
+        }
+    }
+
     private func buildRow() -> [Any?]? {
         let fetchStatus = mysql_stmt_fetch(statement)
         if fetchStatus == MYSQL_NO_DATA {
@@ -184,18 +225,18 @@ public class MySQLResultFetcher: ResultFetcher {
             let type = bind.buffer_type
             switch type {
             case MYSQL_TYPE_TINY:
-                row.append(buffer.load(as: CChar.self))
+                row.append(buffer.load(as: Int8.self))
             case MYSQL_TYPE_SHORT:
-                row.append(buffer.load(as: CShort.self))
+                row.append(buffer.load(as: Int16.self))
             case MYSQL_TYPE_INT24,
                  MYSQL_TYPE_LONG:
-                row.append(buffer.load(as: CInt.self))
+                row.append(buffer.load(as: Int32.self))
             case MYSQL_TYPE_LONGLONG:
-                row.append(buffer.load(as: CLongLong.self))
+                row.append(buffer.load(as: Int64.self))
             case MYSQL_TYPE_FLOAT:
-                row.append(buffer.load(as: CFloat.self))
+                row.append(buffer.load(as: Float.self))
             case MYSQL_TYPE_DOUBLE:
-                row.append(buffer.load(as: CDouble.self))
+                row.append(buffer.load(as: Double.self))
             case MYSQL_TYPE_NEWDECIMAL,
                  MYSQL_TYPE_STRING,
                  MYSQL_TYPE_VAR_STRING:

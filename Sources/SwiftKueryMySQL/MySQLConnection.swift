@@ -298,7 +298,7 @@ public class MySQLConnection: Connection {
 
         if let parameters = parameters {
             for parameter in parameters {
-                binds.append(MySQLConnection.getInputBind(parameter))
+                binds.append(getInputBind(parameter))
             }
             bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
             for i in 0 ..< binds.count {
@@ -338,23 +338,7 @@ public class MySQLConnection: Connection {
         }
     }
 
-    static func getOutputBind(_ field: MYSQL_FIELD) -> MYSQL_BIND {
-        let size = getSize(field: field)
-
-        var bind = MYSQL_BIND()
-        bind.buffer_type = field.type
-        bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
-
-        bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
-        bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-
-        return bind
-    }
-
-    static func getInputBind<T>(_ parameter: T?) -> MYSQL_BIND {
+    private func getInputBind<T>(_ parameter: T?) -> MYSQL_BIND {
         let size: Int
         let buffer: UnsafeMutableRawPointer?
 
@@ -391,7 +375,7 @@ public class MySQLConnection: Connection {
         var bind = MYSQL_BIND()
         bind.buffer_type = getType(parameter: parameter)
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = (parameter is UnsignedInteger ? 1 : 0)
+        bind.is_unsigned = (parameter is UnsignedInteger || parameter is UnicodeScalar ? 1 : 0)
 
         bind.buffer = buffer
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
@@ -403,51 +387,28 @@ public class MySQLConnection: Connection {
         return bind
     }
 
-    static func getSize(field: MYSQL_FIELD) -> Int {
-        switch field.type {
-        case MYSQL_TYPE_TINY:
-            return MemoryLayout<CChar>.size
-        case MYSQL_TYPE_SHORT:
-            return MemoryLayout<CShort>.size
-        case MYSQL_TYPE_INT24,
-             MYSQL_TYPE_LONG:
-            return MemoryLayout<CInt>.size
-        case MYSQL_TYPE_LONGLONG:
-            return MemoryLayout<CLongLong>.size
-        case MYSQL_TYPE_FLOAT:
-            return MemoryLayout<CFloat>.size
-        case MYSQL_TYPE_DOUBLE:
-            return MemoryLayout<CDouble>.size
-        case MYSQL_TYPE_TIME,
-             MYSQL_TYPE_DATE,
-             MYSQL_TYPE_DATETIME,
-             MYSQL_TYPE_TIMESTAMP:
-            return MemoryLayout<MYSQL_TIME>.size
-        default:
-            return Int(field.length)
-        }
-    }
-
-    static func getType(parameter: Any?) -> enum_field_types {
+    private func getType(parameter: Any?) -> enum_field_types {
         guard let parameter = parameter else {
             return MYSQL_TYPE_NULL
         }
 
         switch parameter {
         case is Int8,
-             is UInt8:
+             is UInt8,
+             is Bool:
             return MYSQL_TYPE_TINY
         case is Int16,
              is UInt16:
             return MYSQL_TYPE_SHORT
         case is Int32,
-             is UInt32:
+             is UInt32,
+             is UnicodeScalar:
             return MYSQL_TYPE_LONG
         case is Integer:       // any other integer types
             return MYSQL_TYPE_LONGLONG
-        case is CFloat:
+        case is Float:
             return MYSQL_TYPE_FLOAT
-        case is CDouble:
+        case is Double:
             return MYSQL_TYPE_DOUBLE
         case is MYSQL_TIME:
             return MYSQL_TYPE_DATETIME
@@ -457,7 +418,8 @@ public class MySQLConnection: Connection {
              is [UInt8]:
             return MYSQL_TYPE_BLOB
         default:
-            return MYSQL_TYPE_DOUBLE
+            print("Unhandled input parameter type: \(type(of: parameter))")
+            return MYSQL_TYPE_NULL
         }
     }
 }
