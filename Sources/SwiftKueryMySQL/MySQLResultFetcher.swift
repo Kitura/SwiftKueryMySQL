@@ -24,7 +24,6 @@ import Foundation
 #endif
 
 /// An implementation of query result fetcher.
-
 public class MySQLResultFetcher: ResultFetcher {
     // private let encoding: String.Encoding?
     private var statement: UnsafeMutablePointer<MYSQL_STMT>

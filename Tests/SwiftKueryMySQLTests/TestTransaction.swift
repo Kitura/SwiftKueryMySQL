@@ -27,9 +27,7 @@ class TestTransaction: MySQLTest {
 
     static var allTests: [(String, (TestTransaction) -> () throws -> Void)] {
         return [
-            ("testErrors1", testErrors1),
-            ("testErrors2", testErrors2),
-            ("testErrors3", testErrors3),
+            ("testErrors", testErrors),
             ("testRollback", testRollback),
             ("testSavepoint", testSavepoint),
             ("testTransaction", testTransaction),
@@ -210,7 +208,7 @@ class TestTransaction: MySQLTest {
         })
     }
 
-    func testErrors1() {
+    func testErrors() {
         performTest(asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { result in
@@ -257,11 +255,7 @@ class TestTransaction: MySQLTest {
                     }
                 }
             }
-        })
-    }
-
-    func testErrors2() {
-        performTest(asyncTasks: { connection in
+        }, { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { result in
 
@@ -303,11 +297,7 @@ class TestTransaction: MySQLTest {
                     }
                 }
             }
-        })
-    }
-
-    func testErrors3() {
-        performTest(asyncTasks: { connection in
+        }, { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { result in
 

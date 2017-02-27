@@ -24,12 +24,12 @@ import SwiftKuery
 #endif
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
+/// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
+/// Use `MySQLThreadSafeConnection` to share connection instances between multiple threads.
 public class MySQLConnection: Connection {
     private static let initOnce: () = {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
-
-    private let lock = Lock()
 
     private let host: String
     private let user: String
@@ -97,30 +97,26 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
-        lock.sync {
-            if connection == nil {
-                connection = mysql_init(nil)
-            }
+        if connection == nil {
+            connection = mysql_init(nil)
+        }
 
-            if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
-                if mysql_set_character_set(connection, characterSet) != 0 {
-                    let defaultCharSet = String(cString: mysql_character_set_name(connection))
-                    print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
-                }
-                onCompletion(nil) // success
-            } else {
-                onCompletion(QueryError.connection(getError()))
+        if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
+            if mysql_set_character_set(connection, characterSet) != 0 {
+                let defaultCharSet = String(cString: mysql_character_set_name(connection))
+                print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
             }
+            onCompletion(nil) // success
+        } else {
+            onCompletion(QueryError.connection(getError()))
         }
     }
 
     /// Close the connection to the database.
     public func closeConnection() {
-        lock.sync {
-            if connection != nil {
-                mysql_close(connection)
-                connection = nil
-            }
+        if connection != nil {
+            mysql_close(connection)
+            connection = nil
         }
     }
 
@@ -139,9 +135,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            lock.sync {
-                executeQuery(query: query, onCompletion: onCompletion)
-            }
+            executeQuery(query: query, onCompletion: onCompletion)
         }
     }
 
@@ -152,9 +146,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            lock.sync {
-                executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
-            }
+            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
         }
     }
 
@@ -163,9 +155,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: A String with the query to execute.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        lock.sync {
-            executeQuery(query: raw, onCompletion: onCompletion)
-        }
+        executeQuery(query: raw, onCompletion: onCompletion)
     }
 
     /// Execute a raw query with parameters.
@@ -174,9 +164,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        lock.sync {
-            executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
-        }
+        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
     }
 
     /// NOT supported in MySQL
@@ -244,28 +232,26 @@ public class MySQLConnection: Connection {
         executeTransaction(command: "RELEASE SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to release the savepoint \(savepoint)", onCompletion: onCompletion)
     }
 
-    private func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
 
-        lock.sync {
-            guard let connection = connection else {
-                onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
-                return
-            }
+        guard let connection = connection else {
+            onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
+            return
+        }
 
-            guard self.inTransaction == inTransaction else {
-                let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
-                onCompletion(.error(QueryError.transactionError(error)))
-                return
-            }
+        guard self.inTransaction == inTransaction else {
+            let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
+            onCompletion(.error(QueryError.transactionError(error)))
+            return
+        }
 
-            if mysql_query(connection, command) == 0 {
-                if changeTransactionState {
-                    self.inTransaction = !self.inTransaction
-                }
-                onCompletion(.successNoData)
-            } else {
-                onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
+        if mysql_query(connection, command) == 0 {
+            if changeTransactionState {
+                self.inTransaction = !self.inTransaction
             }
+            onCompletion(.successNoData)
+        } else {
+            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
         }
     }
 
@@ -294,7 +280,7 @@ public class MySQLConnection: Connection {
         mysql_stmt_close(statement)
     }
 
-    private func executeQuery(query: String, parameters: [Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeQuery(query: String, parameters: [Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         guard let connection = connection else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
             return
@@ -451,18 +437,5 @@ public class MySQLConnection: Connection {
             print("Unhandled input parameter type: \(type(of: parameter))")
             return MYSQL_TYPE_NULL
         }
-    }
-}
-
-class Lock {
-    private let lock = NSRecursiveLock()
-    // need a reentrant mutex as sync functions can callback other sync functions
-
-    func sync<T>(execute work: () throws -> T) rethrows -> T {
-        lock.lock()
-        defer {
-            lock.unlock()
-        }
-        return try work()
     }
 }

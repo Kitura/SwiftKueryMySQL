@@ -19,11 +19,11 @@ import Dispatch
 import Foundation
 
 import SwiftKuery
-import SwiftKueryMySQL
+@testable import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
     func performTest(line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
-        guard let connection = createConnection() else {
+        guard let connection = createConnection(taskCount: asyncTasks.count) else {
             return
         }
 
@@ -63,7 +63,7 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func createConnection() -> Connection? {
+    private func createConnection(taskCount: Int) -> Connection? {
         do {
             let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
             let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
@@ -87,7 +87,11 @@ class MySQLTest: XCTestCase {
                 #endif
 
                 if randomBinary == 0 {
-                    return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
+                    if taskCount > 1 {
+                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port)
+                    } else {
+                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
+                    }
                 } else {
                     var urlString = "mysql://"
                     if let username = username, let password = password {
@@ -102,7 +106,11 @@ class MySQLTest: XCTestCase {
                     }
 
                     if let url = URL(string: urlString) {
-                        return MySQLConnection(url: url)
+                        if taskCount > 1 {
+                            return MySQLThreadSafeConnection(url: url)
+                        } else {
+                            return MySQLConnection(url: url)
+                        }
                     }
                     XCTFail("Invalid URL format: \(urlString)")
                 }
