@@ -28,7 +28,7 @@ func executeQuery(query: Query, connection: Connection, callback: @escaping (Que
     }
 }
 
-func executeQueryWithParameters(query: Query, connection: Connection, parameters: Any..., callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeQueryWithParameters(query: Query, connection: Connection, parameters: [Any], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
         try print("=======\(connection.descriptionOf(query: query))=======")
     }
@@ -39,7 +39,26 @@ func executeQueryWithParameters(query: Query, connection: Connection, parameters
     }
 }
 
-func executeRawQueryWithParameters(_ raw: String, connection: Connection, parameters: Any..., callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeRawQueryWithParameters(_ raw: String, connection: Connection, parameters: [Any], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+    print("=======\(raw)=======")
+    connection.execute(raw, parameters: parameters) { result in
+        let rows = printResultAndGetRowsAsArray(result)
+        callback(result, rows)
+    }
+}
+
+func executeQueryWithParameters(query: Query, connection: Connection, parameters: [String:Any], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+    do {
+        try print("=======\(connection.descriptionOf(query: query))=======")
+    }
+    catch {}
+    connection.execute(query: query, parameters: parameters) { result in
+        let rows = printResultAndGetRowsAsArray(result)
+        callback(result, rows)
+    }
+}
+
+func executeRawQueryWithParameters(_ raw: String, connection: Connection, parameters: [String:Any], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     print("=======\(raw)=======")
     connection.execute(raw, parameters: parameters) { result in
         let rows = printResultAndGetRowsAsArray(result)
@@ -73,15 +92,11 @@ private func printResultAndGetRowsAsArray(_ result: QueryResult) -> [[Any?]]? {
         if let rows = rows {
             for row in rows {
                 for value in row {
-                    var valueToPrint = ""
-                    if value != nil {
-                        if value is String {
-                            valueToPrint = value as! String
-                        } else {
-                            valueToPrint = String(describing: value)
-                        }
+                    if let value = value {
+                        print(value, terminator: " ")
+                    } else {
+                        print("nil", terminator: " ")
                     }
-                    print(valueToPrint.padding(toLength: 11, withPad: " ", startingAt: 0), terminator: "")
                 }
                 print()
             }

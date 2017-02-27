@@ -22,8 +22,8 @@ import SwiftKuery
 @testable import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
-    func performTest(line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
-        guard let connection = createConnection(taskCount: asyncTasks.count) else {
+    func performTest(copyBlobData: Bool = true, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
+        guard let connection = createConnection(taskCount: asyncTasks.count, copyBlobData: copyBlobData) else {
             return
         }
 
@@ -63,7 +63,7 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func createConnection(taskCount: Int) -> Connection? {
+    private func createConnection(taskCount: Int, copyBlobData: Bool) -> Connection? {
         do {
             let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
             let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
@@ -86,11 +86,11 @@ class MySQLTest: XCTestCase {
                     randomBinary = arc4random_uniform(2)
                 #endif
 
-                if randomBinary == 0 {
+                if !copyBlobData || randomBinary == 0 {
                     if taskCount > 1 {
-                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port)
+                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port, copyBlobData: copyBlobData)
                     } else {
-                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
+                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port, copyBlobData: copyBlobData)
                     }
                 } else {
                     var urlString = "mysql://"

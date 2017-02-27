@@ -28,6 +28,7 @@ class TestParameters: MySQLTest {
     static var allTests: [(String, (TestParameters) -> () throws -> Void)] {
         return [
             ("testParameters", testParameters),
+            ("testNamedParameters", testNamedParameters),
         ]
     }
 
@@ -48,7 +49,7 @@ class TestParameters: MySQLTest {
                     XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
 
                     let i1 = Insert(into: t, rows: [[Parameter(), 10], ["apricot", Parameter()], [Parameter(), Parameter()]])
-                    executeQueryWithParameters(query: i1, connection: connection, parameters: "apple", 3, "banana", -8) { result, rows in
+                    executeQueryWithParameters(query: i1, connection: connection, parameters: ["apple", 3, "banana", -8]) { result, rows in
                         XCTAssertEqual(result.success, true, "INSERT failed")
                         XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
@@ -66,7 +67,7 @@ class TestParameters: MySQLTest {
                             XCTAssertEqual(rows![2][1]! as! Int32, -8, "Wrong value in row 0 column 0: \(rows![2][1]) instead of -8")
 
                             let u1 = Update(t, set: [(t.a, Parameter()), (t.b, Parameter())], where: t.a == "banana")
-                            executeQueryWithParameters(query: u1, connection: connection, parameters: "peach", 2) { result, rows in
+                            executeQueryWithParameters(query: u1, connection: connection, parameters: ["peach", 2]) { result, rows in
                                 XCTAssertEqual(result.success, true, "UPDATE failed")
                                 XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
 
@@ -79,7 +80,7 @@ class TestParameters: MySQLTest {
                                     XCTAssertEqual(rows![2][1]! as! Int32, 2, "Wrong value in row 0 column 0: \(rows![2][1]) instead of 2")
 
                                     let raw = "UPDATE " + t.tableName + " SET a = 'banana', b = ? WHERE a = ?"
-                                    executeRawQueryWithParameters(raw, connection: connection, parameters: 4, "peach") { result, rows in
+                                    executeRawQueryWithParameters(raw, connection: connection, parameters: [4, "peach"]) { result, rows in
                                         XCTAssertEqual(result.success, true, "UPDATE failed")
                                         XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
 
@@ -95,6 +96,36 @@ class TestParameters: MySQLTest {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        })
+    }
+
+    func testNamedParameters() {
+        performTest(asyncTasks: { connection in
+            let t = MyTable()
+            cleanUp(table: t.tableName, connection: connection) { result in
+
+                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                    XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                    XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+
+                    let i1 = Insert(into: t, rows: [[Parameter("p1"), 10], ["apricot", Parameter("p2")], [Parameter("p3"), Parameter("p4")]])
+                    let namedParameters: [String:Any] = ["p1": "apple", "p2": 3, "p3": "banana", "p4": -8]
+                    executeQueryWithParameters(query: i1, connection: connection, parameters: namedParameters) { result, rows in
+                        XCTAssertEqual(result.success, false, "Expected failure with named parameters, but returned success")
+                        XCTAssertNotNil(result.asError, "Expected error with named parameters, but no error returned")
+                    }
+
+                    do {
+                        let rawQuery = try connection.descriptionOf(query: i1)
+                        executeRawQueryWithParameters(rawQuery, connection: connection, parameters: namedParameters) { result, rows in
+                            XCTAssertEqual(result.success, false, "Expected failure with named parameters, but returned success")
+                            XCTAssertNotNil(result.asError, "Expected error with named parameters, but no error returned")
+                        }
+                    } catch {
+                        XCTFail("Error building query: \(error)")
                     }
                 }
             }

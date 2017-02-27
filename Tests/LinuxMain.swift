@@ -10,4 +10,5 @@ XCTMain([
      testCase(TestJoin.allTests),
      testCase(TestSubquery.allTests),
      testCase(TestTransaction.allTests),
+     testCase(TestColumnTypes.allTests)
 ])

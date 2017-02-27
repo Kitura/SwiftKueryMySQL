@@ -15,6 +15,7 @@
  */
 
 import XCTest
+import Foundation
 import SwiftKuery
 
 #if os(Linux)
@@ -51,67 +52,67 @@ class TestInsert: MySQLTest {
         performTest(asyncTasks: { connection in
             let t = MyTable()
             let t2 = MyTable2()
-            cleanUp(table: t.tableName, connection: connection) { result in
-                cleanUp(table: t2.tableName, connection: connection) { result in
+            defer {
+                cleanUp(table: t.tableName, connection: connection) { _ in }
+                cleanUp(table: t2.tableName, connection: connection) { _ in }
+            }
 
-                    executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
-                        XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                        XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            }
 
-                        executeRawQuery("CREATE TABLE " +  t2.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
-                            XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                            XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            executeRawQuery("CREATE TABLE " +  t2.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            }
 
-                            let i1 = Insert(into: t, values: "apple", 10)
-                            executeQuery(query: i1, connection: connection) { result, rows in
-                                XCTAssertEqual(result.success, true, "INSERT failed")
-                                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i1 = Insert(into: t, values: "apple", 10)
+            executeQuery(query: i1, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                                let i2 = Insert(into: t, valueTuples: (t.a, "apricot"), (t.b, "3"))
-                                executeQuery(query: i2, connection: connection) { result, rows in
-                                    XCTAssertEqual(result.success, true, "INSERT failed")
-                                    XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i2 = Insert(into: t, valueTuples: (t.a, "apricot"), (t.b, "3"))
+            executeQuery(query: i2, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                                    let i3 = Insert(into: t, columns: [t.a, t.b], values: ["banana", 17])
-                                    executeQuery(query: i3, connection: connection) { result, rows in
-                                        XCTAssertEqual(result.success, true, "INSERT failed")
-                                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i3 = Insert(into: t, columns: [t.a, t.b], values: ["banana", 17])
+            executeQuery(query: i3, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                                        let i4 = Insert(into: t, rows: [["apple", 17], ["banana", -7], ["banana", 27]])
-                                        executeQuery(query: i4, connection: connection) { result, rows in
-                                            XCTAssertEqual(result.success, true, "INSERT failed")
-                                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i4 = Insert(into: t, rows: [["apple", 17], ["banana", -7], ["banana", 27]])
+            executeQuery(query: i4, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                                            let i5 = Insert(into: t, rows: [["apple", 5], ["banana", 10], ["banana", 3]])
-                                            executeQuery(query: i5, connection: connection) { result, rows in
-                                                XCTAssertEqual(result.success, true, "INSERT failed")
-                                                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i5 = Insert(into: t, rows: [["apple", 5], ["banana", 10], ["banana", 3]])
+            executeQuery(query: i5, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                                                let i6 = Insert(into: t2, Select(from: t).where(t.a == "apple"))
-                                                executeQuery(query: i6, connection: connection) { result, rows in
-                                                    XCTAssertEqual(result.success, true, "INSERT failed")
-                                                    XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i6 = Insert(into: t2, Select(from: t).where(t.a == "apple"))
+            executeQuery(query: i6, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
-                                                    let s1 = Select(from: t)
-                                                    executeQuery(query: s1, connection: connection) { result, rows in
-                                                        XCTAssertEqual(result.success, true, "SELECT failed")
-                                                        XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                                                        XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                        XCTAssertEqual(rows!.count, 9, "INSERT returned wrong number of rows: \(rows!.count) instead of 9")
+                let s1 = Select(from: t)
+                executeQuery(query: s1, connection: connection) { result, rows in
+                    XCTAssertEqual(result.success, true, "SELECT failed")
+                    XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
+                    XCTAssertNotNil(rows, "SELECT returned no rows")
+                    XCTAssertEqual(rows!.count, 9, "INSERT returned wrong number of rows: \(rows!.count) instead of 9")
 
-                                                        let drop = Raw(query: "DROP TABLE", table: t)
-                                                        executeQuery(query: drop, connection: connection) { result, rows in
-                                                            XCTAssertEqual(result.success, true, "DROP TABLE failed")
-                                                            XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    let drop = Raw(query: "DROP TABLE", table: t)
+                    executeQuery(query: drop, connection: connection) { result, rows in
+                        XCTAssertEqual(result.success, true, "DROP TABLE failed")
+                        XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
                     }
                 }
             }

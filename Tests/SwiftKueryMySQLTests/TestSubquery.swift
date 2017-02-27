@@ -128,7 +128,7 @@ class TestSubquery: MySQLTest {
                                                             s = Select(from: t)
                                                                 .group(by: t.a, t.b)
                                                                 .having(Parameter().in(Parameter(), Parameter()))
-                                                            executeQueryWithParameters(query: s, connection: connection, parameters: true, true, false) { result, rows in
+                                                            executeQueryWithParameters(query: s, connection: connection, parameters: [true, true, false]) { result, rows in
                                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                 XCTAssertNotNil(rows, "SELECT returned no rows")
@@ -136,7 +136,7 @@ class TestSubquery: MySQLTest {
 
                                                                 s = Select(from: t)
                                                                     .where(false.notIn(Parameter(), Parameter()))
-                                                                executeQueryWithParameters(query: s, connection: connection, parameters: true, true) { result, rows in
+                                                                executeQueryWithParameters(query: s, connection: connection, parameters: [true, true]) { result, rows in
                                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                     XCTAssertNotNil(rows, "SELECT returned no rows")

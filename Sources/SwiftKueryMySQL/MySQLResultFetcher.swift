@@ -238,7 +238,8 @@ public class MySQLResultFetcher: ResultFetcher {
                 row.append(buffer.load(as: Double.self))
             case MYSQL_TYPE_NEWDECIMAL,
                  MYSQL_TYPE_STRING,
-                 MYSQL_TYPE_VAR_STRING:
+                 MYSQL_TYPE_VAR_STRING,
+                 MYSQL_TYPE_JSON:
                 row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: String.Encoding.utf8, freeWhenDone: false))
             case MYSQL_TYPE_TINY_BLOB,
                  MYSQL_TYPE_BLOB,
