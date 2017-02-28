@@ -321,7 +321,7 @@ public class MySQLConnection: Connection {
 
         defer {
             for bind in binds {
-                if bind.buffer_length != 0 {
+                if bind.buffer != nil {
                     bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
                 }
                 bind.length.deallocate(capacity: 1)
