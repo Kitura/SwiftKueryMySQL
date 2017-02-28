@@ -133,11 +133,11 @@ public class MySQLConnection: Connection {
     // TODO - remove after changing Connection API
     public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
+            executeQuery(query: query, parametersArray: [parameters], onCompletion: onCompletion)
         }
     }
     public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
+        executeQuery(query: raw, parametersArray: [parameters], onCompletion: onCompletion)
     }
     public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
@@ -165,7 +165,18 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
+            executeQuery(query: query, parametersArray: [parameters], onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a query multiple times with multiple parameter sets.
+    ///
+    /// - Parameter query: The query to execute.
+    /// - Parameter parameters: Multiple sets of parameters.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(query: Query, parametersArray: [[Any?]], onCompletion: @escaping ((QueryResult) -> ())) {
+        if let query = build(query: query, onCompletion: onCompletion) {
+            executeQuery(query: query, parametersArray: parametersArray, onCompletion: onCompletion)
         }
     }
 
@@ -183,7 +194,17 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
+        executeQuery(query: raw, parametersArray: [parameters], onCompletion: onCompletion)
+    }
+
+
+    /// Execute a raw query multiple times with multiple parameter sets.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter parameters: Multiple sets of parameters.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(_ raw: String, parametersArray: [[Any?]], onCompletion: @escaping ((QueryResult) -> ())) {
+        executeQuery(query: raw, parametersArray: parametersArray, onCompletion: onCompletion)
     }
 
     /// NOT supported in MySQL
@@ -299,7 +320,7 @@ public class MySQLConnection: Connection {
         mysql_stmt_close(statement)
     }
 
-    func executeQuery(query: String, parameters: [Any?]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeQuery(query: String, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         guard let connection = connection else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
             return
@@ -320,30 +341,15 @@ public class MySQLConnection: Connection {
         var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
 
         defer {
-            for bind in binds {
-                if bind.buffer != nil {
-                    bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
-                }
-                bind.length.deallocate(capacity: 1)
-                bind.is_null.deallocate(capacity: 1)
-            }
-
-            if let bindPtr = bindPtr {
-                bindPtr.deallocate(capacity: binds.count)
-            }
+            deallocateBinds(binds: &binds, bindPtr: &bindPtr)
         }
 
-        if let parameters = parameters {
-            for parameter in parameters {
-                binds.append(getInputBind(parameter))
-            }
-            bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
-            for i in 0 ..< binds.count {
-                bindPtr![i] = binds[i]
-            }
-
-            guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
-                handleError(statement, onCompletion: onCompletion)
+        if let parametersArray = parametersArray, parametersArray.count > 0 {
+            do {
+                try allocateBinds(statement: statement, parameters: parametersArray[0], binds: &binds, bindPtr: &bindPtr)
+            } catch {
+                mysql_stmt_close(statement)
+                onCompletion(.error(error))
                 return
             }
         }
@@ -354,8 +360,34 @@ public class MySQLConnection: Connection {
                 handleError(statement, onCompletion: onCompletion)
                 return
             }
-            let affectedRows = mysql_stmt_affected_rows(statement)
-            mysql_stmt_close(statement)
+
+            defer {
+                mysql_stmt_close(statement)
+            }
+
+            var affectedRows = [UInt64]()
+            affectedRows.append(mysql_stmt_affected_rows(statement))
+
+            if let parametersArray = parametersArray, parametersArray.count > 1 {
+                for i in 1 ..< parametersArray.count {
+                    deallocateBinds(binds: &binds, bindPtr: &bindPtr)
+
+                    do {
+                        try allocateBinds(statement: statement, parameters: parametersArray[i], binds: &binds, bindPtr: &bindPtr)
+                    } catch {
+                        onCompletion(.error(error))
+                        return
+                    }
+
+                    guard mysql_stmt_execute(statement) == 0 else {
+                        handleError(statement, onCompletion: onCompletion)
+                        return
+                    }
+
+                    affectedRows.append(mysql_stmt_affected_rows(statement))
+                }
+            }
+
             onCompletion(.success("\(affectedRows) rows affected"))
             return
         }
@@ -373,6 +405,39 @@ public class MySQLConnection: Connection {
         } catch {
             onCompletion(.error(error))
         }
+    }
+
+    private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>?) throws {
+
+        for parameter in parameters {
+            binds.append(getInputBind(parameter))
+        }
+
+        bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
+        for i in 0 ..< binds.count {
+            bindPtr![i] = binds[i]
+        }
+
+        guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
+            throw QueryError.databaseError(getError(statement))
+        }
+    }
+
+    private func deallocateBinds(binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>?) {
+        for bind in binds {
+            if bind.buffer != nil {
+                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+            }
+            bind.length.deallocate(capacity: 1)
+            bind.is_null.deallocate(capacity: 1)
+        }
+
+        if let bindPtr = bindPtr {
+            bindPtr.deallocate(capacity: binds.count)
+        }
+
+        binds.removeAll()
+        bindPtr = nil
     }
 
     private func getInputBind<T>(_ parameter: T?) -> MYSQL_BIND {

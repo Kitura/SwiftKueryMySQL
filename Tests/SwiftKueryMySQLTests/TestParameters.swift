@@ -28,6 +28,7 @@ class TestParameters: MySQLTest {
     static var allTests: [(String, (TestParameters) -> () throws -> Void)] {
         return [
             ("testParameters", testParameters),
+            ("testMultipleParameterSets", testMultipleParameterSets),
             ("testNamedParameters", testNamedParameters),
         ]
     }
@@ -95,6 +96,40 @@ class TestParameters: MySQLTest {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    func testMultipleParameterSets() {
+        performTest(asyncTasks: { connection in
+            let t = MyTable()
+            cleanUp(table: t.tableName, connection: connection) { result in
+
+                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                    XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                    XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+
+                    let i1 = "insert into " + t.tableName + " values(?, ?)"
+                    let parametersArray = [["apple", 10], ["apricot", 3], ["banana", -8]]
+                    executeRawQueryWithParameters(i1, connection: connection, parametersArray: parametersArray) { result, rows in
+                        XCTAssertEqual(result.success, true, "INSERT failed")
+                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                        let s1 = Select(from: t)
+                        executeQuery(query: s1, connection: connection) { result, rows in
+                            XCTAssertEqual(result.success, true, "SELECT failed")
+                            XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
+                            XCTAssertNotNil(rows, "SELECT returned no rows")
+                            XCTAssertEqual(rows!.count, 3, "SELECT returned wrong number of rows: \(rows!.count) instead of 3")
+                            XCTAssertEqual(rows![0][0]! as! String, "apple", "Wrong value in row 0 column 0: \(rows![0][0]) instead of 'apple'")
+                            XCTAssertEqual(rows![1][0]! as! String, "apricot", "Wrong value in row 0 column 0: \(rows![1][0]) instead of 'apricot'")
+                            XCTAssertEqual(rows![2][0]! as! String, "banana", "Wrong value in row 0 column 0: \(rows![2][0]) instead of 'banana'")
+                            XCTAssertEqual(rows![0][1]! as! Int32, 10, "Wrong value in row 0 column 0: \(rows![0][1]) instead of 10")
+                            XCTAssertEqual(rows![1][1]! as! Int32, 3, "Wrong value in row 0 column 0: \(rows![1][1]) instead of 3")
+                            XCTAssertEqual(rows![2][1]! as! Int32, -8, "Wrong value in row 0 column 0: \(rows![2][1]) instead of -8")
                         }
                     }
                 }

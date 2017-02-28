@@ -48,6 +48,25 @@ func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, p
     }
 }
 
+func executeQueryWithParameters(query: Query, connection: MySQLConnection, parametersArray: [[Any?]], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+    do {
+        try print("=======\(connection.descriptionOf(query: query))=======")
+    }
+    catch {}
+    connection.execute(query: query, parametersArray: parametersArray) { result in
+        let rows = printResultAndGetRowsAsArray(result)
+        callback(result, rows)
+    }
+}
+
+func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, parametersArray: [[Any?]], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+    print("=======\(raw)=======")
+    connection.execute(raw, parametersArray: parametersArray) { result in
+        let rows = printResultAndGetRowsAsArray(result)
+        callback(result, rows)
+    }
+}
+
 func executeQueryWithParameters(query: Query, connection: MySQLConnection, parameters: [String:Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
         try print("=======\(connection.descriptionOf(query: query))=======")
