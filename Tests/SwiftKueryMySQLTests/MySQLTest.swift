@@ -22,7 +22,7 @@ import SwiftKuery
 @testable import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
-    func performTest(copyBlobData: Bool = true, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
+    func performTest(copyBlobData: Bool = true, line: Int = #line, asyncTasks: @escaping (MySQLConnection) -> Void...) {
         guard let connection = createConnection(taskCount: asyncTasks.count, copyBlobData: copyBlobData) else {
             return
         }
@@ -63,7 +63,7 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func createConnection(taskCount: Int, copyBlobData: Bool) -> Connection? {
+    private func createConnection(taskCount: Int, copyBlobData: Bool) -> MySQLConnection? {
         do {
             let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
             let data = Data(referencing: try NSData(contentsOfFile: connectionFile))

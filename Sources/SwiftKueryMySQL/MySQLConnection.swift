@@ -129,6 +129,25 @@ public class MySQLConnection: Connection {
         return try query.build(queryBuilder: queryBuilder)
     }
 
+
+    // TODO - remove after changing Connection API
+    public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        if let query = build(query: query, onCompletion: onCompletion) {
+            executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
+        }
+    }
+    public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
+    }
+    public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
+    }
+    public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
+    }
+    // TODO - remove after changing Connection API
+
+
     /// Execute a query.
     ///
     /// - Parameter query: The query to execute.
@@ -144,7 +163,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: The query to execute.
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
+    public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         if let query = build(query: query, onCompletion: onCompletion) {
             executeQuery(query: query, parameters: parameters, onCompletion: onCompletion)
         }
@@ -163,7 +182,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: A String with the query to execute.
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
+    public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         executeQuery(query: raw, parameters: parameters, onCompletion: onCompletion)
     }
 
@@ -173,7 +192,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: The query to execute.
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+    public func execute(query: Query, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
@@ -183,7 +202,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: A String with the query to execute.
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
+    public func execute(_ raw: String, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
@@ -280,7 +299,7 @@ public class MySQLConnection: Connection {
         mysql_stmt_close(statement)
     }
 
-    func executeQuery(query: String, parameters: [Any]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeQuery(query: String, parameters: [Any?]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         guard let connection = connection else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
             return
@@ -302,7 +321,9 @@ public class MySQLConnection: Connection {
 
         defer {
             for bind in binds {
-                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                if bind.buffer_length != 0 {
+                    bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                }
                 bind.length.deallocate(capacity: 1)
                 bind.is_null.deallocate(capacity: 1)
             }
@@ -434,7 +455,7 @@ public class MySQLConnection: Connection {
              is [UInt8]:
             return MYSQL_TYPE_BLOB
         default:
-            print("Unhandled input parameter type: \(type(of: parameter))")
+            print("Unhandled input parameter \(parameter) (type: \(type(of: parameter)))")
             return MYSQL_TYPE_NULL
         }
     }
