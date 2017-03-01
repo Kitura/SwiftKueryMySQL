@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>MySQLConnection Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset="utf-8">
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+
+    <a name="//apple_ref/swift/Class/MySQLConnection" class="dashAnchor"></a>
+
+    <a title="MySQLConnection Class Reference"></a>
+
+    <header class="header">
+      <p class="header-col header-col--primary">
+        <a class="header-link" href="../index.html">
+          SwiftKueryMySQL Docs
+        </a>
+         (100% documented)
+      </p>
+    
+        <p class="header-col header-col--secondary">
+          <a class="header-link" href="https://github.com/IBM-Swift/SwiftKueryMySQL/">
+            <img class="header-icon" src="../img/gh.png"/>
+            View on GitHub
+          </a>
+        </p>
+    
+    </header>
+
+    <p class="breadcrumbs">
+      <a class="breadcrumb" href="../index.html">SwiftKueryMySQL Reference</a>
+      <img class="carat" src="../img/carat.png" />
+      MySQLConnection Class Reference
+    </p>
+
+    <div class="content-wrapper">
+      <nav class="navigation">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLConnection.html">MySQLConnection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLResultFetcher.html">MySQLResultFetcher</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLThreadSafeConnection.html">MySQLThreadSafeConnection</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+
+        <section class="section">
+          <div class="section-content">
+            <h1>MySQLConnection</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="kt">MySQLConnection</span><span class="p">:</span> <span class="kt">Connection</span></code></pre>
+
+                </div>
+              </div>
+            <p>An implementation of <code>SwiftKuery.Connection</code> protocol for MySQL.
+Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
+Use <code><a href="../Classes/MySQLThreadSafeConnection.html">MySQLThreadSafeConnection</a></code> to share connection instances between multiple threads.</p>
+
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-content">
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:vC15SwiftKueryMySQL15MySQLConnection12queryBuilderC10SwiftKuery12QueryBuilder"></a>
+                    <a name="//apple_ref/swift/Property/queryBuilder" class="dashAnchor"></a>
+                    <a class="token" href="#/s:vC15SwiftKueryMySQL15MySQLConnection12queryBuilderC10SwiftKuery12QueryBuilder">queryBuilder</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The <code>QueryBuilder</code> with MySQL specific substitutions.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">queryBuilder</span><span class="p">:</span> <span class="kt">QueryBuilder</span> <span class="o">=</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnectioncFT4hostGSqSS_4userGSqSS_8passwordGSqSS_8databaseGSqSS_4portGSqSi_10unixSocketGSqSS_10clientFlagSu12characterSetGSqSS_12copyBlobDataSb_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(host:user:password:database:port:unixSocket:clientFlag:characterSet:copyBlobData:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnectioncFT4hostGSqSS_4userGSqSS_8passwordGSqSS_8databaseGSqSS_4portGSqSi_10unixSocketGSqSS_10clientFlagSu12characterSetGSqSS_12copyBlobDataSb_S0_">init(host:user:password:database:port:unixSocket:clientFlag:characterSet:copyBlobData:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initialize an instance of MySQLConnection.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter host: host name or IP address of server to connect to, defaults to localhost
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter user: MySQL login ID, defaults to current user
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter password: password for <code>user</code>, defaults to no password
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter database: default database to use if specified
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter port: port number for the TCP/IP connection if using a non-standard port
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter clientFlag: MySQL client options
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter copyBlobData: Whether or not to copy bytes to Data objects in QueryResult (defaults to true).
+          When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.
+          Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.
+          Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">port</span><span class="p">:</span> <span class="kt">Int</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">unixSocket</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">clientFlag</span><span class="p">:</span> <span class="kt">UInt</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">characterSet</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">copyBlobData</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">true</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>host</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>host name or IP address of server to connect to, defaults to localhost</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>MySQL login ID, defaults to current user</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>password</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>password for <code>user</code>, defaults to no password</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>database</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>default database to use if specified</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>port</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>port number for the TCP/IP connection if using a non-standard port</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>unixSocket</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>unix domain socket or named pipe to use for connecting to server instead of TCP/IP</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>clientFlag</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>MySQL client options</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>copyBlobData</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Whether or not to copy bytes to Data objects in QueryResult (defaults to true). When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs. Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects. Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnectioncFT3urlV10Foundation3URL_S0_"></a>
+                    <a name="//apple_ref/swift/Method/init(url:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnectioncFT3urlV10Foundation3URL_S0_">init(url:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Initialize an instance of MySQLConnection.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter url: A URL with the connection information. For example, mysql://user:password@host:port/database
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="n">convenience</span> <span class="nf">init</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>url</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A URL with the connection information. For example, mysql://user:password@host:port/database</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7connectFT12onCompletionFGSqO10SwiftKuery10QueryError_T__T_"></a>
+                    <a name="//apple_ref/swift/Method/connect(onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7connectFT12onCompletionFGSqO10SwiftKuery10QueryError_T__T_">connect(onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Establish a connection with the database.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the connection is established.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">connect</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="p">(</span><span class="kt">QueryError</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the connection is established.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection15closeConnectionFT_T_"></a>
+                    <a name="//apple_ref/swift/Method/closeConnection()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection15closeConnectionFT_T_">closeConnection()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Close the connection to the database.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">closeConnection</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection13descriptionOfFzT5queryP10SwiftKuery5Query__SS"></a>
+                    <a name="//apple_ref/swift/Method/descriptionOf(query:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection13descriptionOfFzT5queryP10SwiftKuery5Query__SS">descriptionOf(query:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Return a String representation of the query.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: The query.
+
+</div>
+
+<div class="aside aside-returns">
+    <p class="aside-title">Returns</p>
+    A String representation of the query.
+
+</div>
+
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    QueryError.syntaxError if query build fails.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">descriptionOf</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A String representation of the query.</p>
+
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FP10SwiftKuery10Connection7executeFT5queryPS_5Query_10parametersGSaP__12onCompletionFOS_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FP10SwiftKuery10Connection7executeFT5queryPS_5Query_10parametersGSaP__12onCompletionFOS_11QueryResultT__T_">execute(query:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An array of the parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FP10SwiftKuery10Connection7executeFTSS10parametersGSaP__12onCompletionFOS_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FP10SwiftKuery10Connection7executeFTSS10parametersGSaP__12onCompletionFOS_11QueryResultT__T_">execute(_:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An array of the parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FP10SwiftKuery10Connection7executeFT5queryPS_5Query_10parametersGVs10DictionarySSP__12onCompletionFOS_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FP10SwiftKuery10Connection7executeFT5queryPS_5Query_10parametersGVs10DictionarySSP__12onCompletionFOS_11QueryResultT__T_">execute(query:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span><span class="kt">Any</span><span class="p">],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A dictionary of the parameters with parameter names as the keys.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FP10SwiftKuery10Connection7executeFTSS10parametersGVs10DictionarySSP__12onCompletionFOS_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FP10SwiftKuery10Connection7executeFTSS10parametersGVs10DictionarySSP__12onCompletionFOS_11QueryResultT__T_">execute(_:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span><span class="kt">Any</span><span class="p">],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A dictionary of the parameters with parameter names as the keys.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_12onCompletionFOS1_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_12onCompletionFOS1_11QueryResultT__T_">execute(query:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a query.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: The query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_10parametersGSaGSqP___12onCompletionFOS1_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_10parametersGSaGSqP___12onCompletionFOS1_11QueryResultT__T_">execute(query:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a query with parameters.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: The query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: An array of the parameters.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">?],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An array of the parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_15parametersArrayGSaGSaGSqP____12onCompletionFOS1_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:parametersArray:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_15parametersArrayGSaGSaGSqP____12onCompletionFOS1_11QueryResultT__T_">execute(query:parametersArray:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a query multiple times with multiple parameter sets.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: The query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: Multiple sets of parameters.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">parametersArray</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Any</span><span class="p">?]],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Multiple sets of parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS12onCompletionFO10SwiftKuery11QueryResultT__T_">execute(_:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a raw query.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: A String with the query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS10parametersGSaGSqP___12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS10parametersGSaGSqP___12onCompletionFO10SwiftKuery11QueryResultT__T_">execute(_:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a raw query with parameters.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: A String with the query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: An array of the parameters.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">Any</span><span class="p">?],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An array of the parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS15parametersArrayGSaGSaGSqP____12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:parametersArray:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS15parametersArrayGSaGSaGSqP____12onCompletionFO10SwiftKuery11QueryResultT__T_">execute(_:parametersArray:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Execute a raw query multiple times with multiple parameter sets.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: A String with the query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: Multiple sets of parameters.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parametersArray</span><span class="p">:</span> <span class="p">[[</span><span class="kt">Any</span><span class="p">?]],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>Multiple sets of parameters.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_10parametersGVs10DictionarySSGSqP___12onCompletionFOS1_11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(query:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFT5queryP10SwiftKuery5Query_10parametersGVs10DictionarySSGSqP___12onCompletionFOS1_11QueryResultT__T_">execute(query:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>NOT supported in MySQL
+Execute a query with named parameters.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: The query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: A dictionary of the parameters with parameter names as the keys.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="kt">Query</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span><span class="kt">Any</span><span class="p">?],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A dictionary of the parameters with parameter names as the keys.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS10parametersGVs10DictionarySSGSqP___12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/execute(_:parameters:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7executeFTSS10parametersGVs10DictionarySSGSqP___12onCompletionFO10SwiftKuery11QueryResultT__T_">execute(_:parameters:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>NOT supported in MySQL
+Execute a raw query with named parameters.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter query: A String with the query to execute.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter parameters: A dictionary of the parameters with parameter names as the keys.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of the query has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">execute</span><span class="p">(</span><span class="n">_</span> <span class="nv">raw</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">parameters</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span><span class="kt">Any</span><span class="p">?],</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>query</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A String with the query to execute.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>parameters</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A dictionary of the parameters with parameter names as the keys.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of the query has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection16startTransactionFT12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/startTransaction(onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection16startTransactionFT12onCompletionFO10SwiftKuery11QueryResultT__T_">startTransaction(onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Start a transaction.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of start transaction command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">startTransaction</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of start transaction command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection6commitFT12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/commit(onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection6commitFT12onCompletionFO10SwiftKuery11QueryResultT__T_">commit(onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Commit the current transaction.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of commit transaction command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">commit</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of commit transaction command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection8rollbackFT12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/rollback(onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection8rollbackFT12onCompletionFO10SwiftKuery11QueryResultT__T_">rollback(onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Rollback the current transaction.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">rollback</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of rolback transaction command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection6createFT9savepointSS12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/create(savepoint:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection6createFT9savepointSS12onCompletionFO10SwiftKuery11QueryResultT__T_">create(savepoint:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Create a savepoint.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter savepoint: The name to  be given to the created savepoint.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of create savepoint command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">create</span><span class="p">(</span><span class="nv">savepoint</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>savepoint</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name to  be given to the created savepoint.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of create savepoint command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection8rollbackFT2toSS12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/rollback(to:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection8rollbackFT2toSS12onCompletionFO10SwiftKuery11QueryResultT__T_">rollback(to:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Rollback the current transaction to the specified savepoint.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter to savepoint: The name of the savepoint to rollback to.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">rollback</span><span class="p">(</span><span class="n">to</span> <span class="nv">savepoint</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>to savepoint</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name of the savepoint to rollback to.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of rolback transaction command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL15MySQLConnection7releaseFT9savepointSS12onCompletionFO10SwiftKuery11QueryResultT__T_"></a>
+                    <a name="//apple_ref/swift/Method/release(savepoint:onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL15MySQLConnection7releaseFT9savepointSS12onCompletionFO10SwiftKuery11QueryResultT__T_">release(savepoint:onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Release a savepoint.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter savepoint: The name of the savepoint to release.
+
+</div>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the execution of release savepoint command has completed.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">release</span><span class="p">(</span><span class="nv">savepoint</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">onCompletion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">QueryResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()))</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>savepoint</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name of the savepoint to release.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the execution of release savepoint command has completed.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+    <section class="footer">
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-02-28)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+    </section>
+  </body>
+</div>
+</html>

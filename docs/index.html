@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>SwiftKueryMySQL  Reference</title>
+    <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="css/highlight.css" />
+    <meta charset="utf-8">
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+
+
+    <a title="SwiftKueryMySQL  Reference"></a>
+
+    <header class="header">
+      <p class="header-col header-col--primary">
+        <a class="header-link" href="index.html">
+          SwiftKueryMySQL Docs
+        </a>
+         (100% documented)
+      </p>
+    
+        <p class="header-col header-col--secondary">
+          <a class="header-link" href="https://github.com/IBM-Swift/SwiftKueryMySQL/">
+            <img class="header-icon" src="img/gh.png"/>
+            View on GitHub
+          </a>
+        </p>
+    
+    </header>
+
+    <p class="breadcrumbs">
+      <a class="breadcrumb" href="index.html">SwiftKueryMySQL Reference</a>
+      <img class="carat" src="img/carat.png" />
+      SwiftKueryMySQL  Reference
+    </p>
+
+    <div class="content-wrapper">
+      <nav class="navigation">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/MySQLConnection.html">MySQLConnection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/MySQLResultFetcher.html">MySQLResultFetcher</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/MySQLThreadSafeConnection.html">MySQLThreadSafeConnection</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+
+        <section class="section">
+          <div class="section-content">
+            
+            <a href='#swiftkuerymysql' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h1 id='swiftkuerymysql'>SwiftKueryMySQL</h1>
+
+<p>MySQL plugin for Swift-Kuery framework</p>
+
+<p><img src="https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat" alt="macOS">
+<img src="https://img.shields.io/badge/os-linux-green.svg?style=flat" alt="Linux">
+<img src="https://img.shields.io/badge/license-Apache2-blue.svg?style=flat" alt="Apache 2"></p>
+<a href='#summary' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='summary'>Summary</h2>
+
+<p><a href="https://dev.mysql.com/">MySQL</a> plugin for the <a href="https://github.com/IBM-Swift/Swift-Kuery">Swift-Kuery</a> framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.</p>
+<a href='#install-mysql' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h3 id='install-mysql'>Install MySQL</h3>
+<a href='#macos' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h4 id='macos'>macOS</h4>
+<pre class="highlight plaintext"><code>brew install mysql
+</code></pre>
+
+<p>Other install options: <a href="https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html">https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html</a></p>
+
+<p>On macOS, add <code>-Xlinker -L/usr/local/lib</code> to swift commands to point the linker to the MySQL library location.
+For example,
+<code>
+swift package generate-xcodeproj -Xlinker -L/usr/local/lib
+swift build -Xlinker -L/usr/local/lib
+swift test -Xlinker -L/usr/local/lib
+</code></p>
+<a href='#linux' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h4 id='linux'>Linux</h4>
+
+<p>Download the release package for your Linux distribution from <a href="http://dev.mysql.com/downloads/repo/apt/">http://dev.mysql.com/downloads/repo/apt/</a>
+<code>
+sudo dpkg -i mysql-apt-config_w.x.y-z_all.deb
+sudo apt-get update
+sudo apt-get install mysql-server
+</code>
+More details: <a href="https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html">https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html</a></p>
+<a href='#using-swift-kuery-mysql' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='using-swift-kuery-mysql'>Using Swift-Kuery-MySQL</h2>
+
+<p>First create an instance of <code>MySQLConnection</code> by calling:</p>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">connection</span> <span class="o">=</span> <span class="kt">MySQLConnection</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span> <span class="nv">database</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> <span class="nv">port</span><span class="p">:</span> <span class="n">port</span><span class="p">)</span>
+</code></pre>
+
+<p><strong>Where:</strong>
+- <em>host</em> and <em>port</em> are the host and the port of the MySQL server
+- <em>user</em> - the user name
+- <em>password</em> - the user password
+- <em>database</em> - the database name</p>
+
+<p><br>
+Alternatively, call:
+<code>swift
+let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(password)@\(host):\(port)/\(database)&quot;)!))
+</code></p>
+
+<p>To establish a connection call:</p>
+<pre class="highlight swift"><code><span class="kt">MySQLConnection</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="p">(</span><span class="kt">QueryError</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+</code></pre>
+
+<p>If you want to share a connection instance between multiple threads use <code>MySQLThreadSafeConnection</code> instead of <code>MySQLConnection</code></p>
+
+<p>You now have a connection that can be used to execute SQL queries created using Swift-Kuery. View the <a href="https://github.com/IBM-Swift/Swift-Kuery">Kuery</a> documentation for more information.</p>
+<a href='#license' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='license'>License</h2>
+
+<p>This library is licensed under Apache 2.0. Full license text is available in <a href="LICENSE.txt">LICENSE</a>.</p>
+
+          </div>
+        </section>
+
+
+      </article>
+    </div>
+    <section class="footer">
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-02-28)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+    </section>
+  </body>
+</div>
+</html>

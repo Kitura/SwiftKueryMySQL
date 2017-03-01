@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>MySQLThreadSafeConnection Class Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset="utf-8">
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+  </head>
+  <body>
+
+    <a name="//apple_ref/swift/Class/MySQLThreadSafeConnection" class="dashAnchor"></a>
+
+    <a title="MySQLThreadSafeConnection Class Reference"></a>
+
+    <header class="header">
+      <p class="header-col header-col--primary">
+        <a class="header-link" href="../index.html">
+          SwiftKueryMySQL Docs
+        </a>
+         (100% documented)
+      </p>
+    
+        <p class="header-col header-col--secondary">
+          <a class="header-link" href="https://github.com/IBM-Swift/SwiftKueryMySQL/">
+            <img class="header-icon" src="../img/gh.png"/>
+            View on GitHub
+          </a>
+        </p>
+    
+    </header>
+
+    <p class="breadcrumbs">
+      <a class="breadcrumb" href="../index.html">SwiftKueryMySQL Reference</a>
+      <img class="carat" src="../img/carat.png" />
+      MySQLThreadSafeConnection Class Reference
+    </p>
+
+    <div class="content-wrapper">
+      <nav class="navigation">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLConnection.html">MySQLConnection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLResultFetcher.html">MySQLResultFetcher</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MySQLThreadSafeConnection.html">MySQLThreadSafeConnection</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+
+        <section class="section">
+          <div class="section-content">
+            <h1>MySQLThreadSafeConnection</h1>
+              <div class="declaration">
+                <div class="language">
+                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="kt">MySQLThreadSafeConnection</span><span class="p">:</span> <span class="kt"><a href="../Classes/MySQLConnection.html">MySQLConnection</a></span></code></pre>
+
+                </div>
+              </div>
+            <p>A thread-safe implementation of <code>SwiftKuery.Connection</code> protocol for MySQL.
+Instances of MySQLThreadSafeConnection can be safely shared between multiple threads.</p>
+
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-content">
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL25MySQLThreadSafeConnection7connectFT12onCompletionFGSqO10SwiftKuery10QueryError_T__T_"></a>
+                    <a name="//apple_ref/swift/Method/connect(onCompletion:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL25MySQLThreadSafeConnection7connectFT12onCompletionFGSqO10SwiftKuery10QueryError_T__T_">connect(onCompletion:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Establish a connection with the database.</p>
+
+<div class="aside aside-parameter">
+    <p class="aside-title">Parameter</p>
+    Parameter onCompletion: The function to be called when the connection is established.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">override</span> <span class="kd">func</span> <span class="nf">connect</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="p">(</span><span class="kt">QueryError</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>onCompletion</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The function to be called when the connection is established.</p>
+
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:FC15SwiftKueryMySQL25MySQLThreadSafeConnection15closeConnectionFT_T_"></a>
+                    <a name="//apple_ref/swift/Method/closeConnection()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:FC15SwiftKueryMySQL25MySQLThreadSafeConnection15closeConnectionFT_T_">closeConnection()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Close the connection to the database.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">override</span> <span class="kd">func</span> <span class="nf">closeConnection</span><span class="p">()</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+    <section class="footer">
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-02-28)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+    </section>
+  </body>
+</div>
+</html>
