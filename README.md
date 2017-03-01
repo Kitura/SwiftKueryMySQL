@@ -1,7 +1,7 @@
 # SwiftKueryMySQL
 MySQL plugin for Swift-Kuery framework
 
-![Mac OS X](https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat)
+![macOS](https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat)
 ![Linux](https://img.shields.io/badge/os-linux-green.svg?style=flat)
 ![Apache 2](https://img.shields.io/badge/license-Apache2-blue.svg?style=flat)
 
@@ -10,12 +10,19 @@ MySQL plugin for Swift-Kuery framework
 
 ### Install MySQL
 
-#### Mac
+#### macOS
 ```
 brew install mysql
 ```
 Other install options: https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html
 
+On macOS, add `-Xlinker -L/usr/local/lib` to swift commands to point the linker to the MySQL library location.
+For example,
+```
+swift package generate-xcodeproj -Xlinker -L/usr/local/lib
+swift build -Xlinker -L/usr/local/lib
+swift test -Xlinker -L/usr/local/lib
+```
 
 #### Linux
 Download the release package for your Linux distribution from http://dev.mysql.com/downloads/repo/apt/
