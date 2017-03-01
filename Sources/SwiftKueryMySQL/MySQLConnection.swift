@@ -61,6 +61,7 @@ public class MySQLConnection: Connection {
     /// - Parameter port: port number for the TCP/IP connection if using a non-standard port
     /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
     /// - Parameter clientFlag: MySQL client options
+    /// - Parameter characterSet: MySQL character set to use for the connection
     /// - Parameter copyBlobData: Whether or not to copy bytes to Data objects in QueryResult (defaults to true).
     ///               When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.
     ///               Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.

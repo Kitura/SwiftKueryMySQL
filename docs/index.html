@@ -65,6 +65,10 @@
 
 <p>MySQL plugin for Swift-Kuery framework</p>
 
+<!-- 
+[![Build Status - Master](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL.svg?branch=master)](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL)
+-->
+
 <p><img src="https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat" alt="macOS">
 <img src="https://img.shields.io/badge/os-linux-green.svg?style=flat" alt="Linux">
 <img src="https://img.shields.io/badge/license-Apache2-blue.svg?style=flat" alt="Apache 2"></p>
@@ -74,6 +78,7 @@
 <a href='#install-mysql' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h3 id='install-mysql'>Install MySQL</h3>
 <a href='#macos' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h4 id='macos'>macOS</h4>
 <pre class="highlight plaintext"><code>brew install mysql
+mysql.server start
 </code></pre>
 
 <p>Other install options: <a href="https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html">https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html</a></p>
@@ -81,33 +86,54 @@
 <p>On macOS, add <code>-Xlinker -L/usr/local/lib</code> to swift commands to point the linker to the MySQL library location.
 For example,
 <code>
-swift package generate-xcodeproj -Xlinker -L/usr/local/lib
 swift build -Xlinker -L/usr/local/lib
 swift test -Xlinker -L/usr/local/lib
+swift package generate-xcodeproj -Xlinker -L/usr/local/lib
 </code></p>
 <a href='#linux' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h4 id='linux'>Linux</h4>
 
 <p>Download the release package for your Linux distribution from <a href="http://dev.mysql.com/downloads/repo/apt/">http://dev.mysql.com/downloads/repo/apt/</a>
+For example: <code>wget https://repo.mysql.com//mysql-apt-config_0.8.2-1_all.deb</code>
 <code>
-sudo dpkg -i mysql-apt-config_w.x.y-z_all.deb
+sudo dpkg -i mysql-apt-config_0.8.2-1_all.deb
 sudo apt-get update
 sudo apt-get install mysql-server
+sudo service mysql start
 </code>
 More details: <a href="https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html">https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html</a></p>
+
+<p>On linux, regular swift commands should work fine:
+<code>
+swift build
+swift test
+swift package generate-xcodeproj
+</code></p>
 <a href='#using-swift-kuery-mysql' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='using-swift-kuery-mysql'>Using Swift-Kuery-MySQL</h2>
 
 <p>First create an instance of <code>MySQLConnection</code> by calling:</p>
-<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">connection</span> <span class="o">=</span> <span class="kt">MySQLConnection</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span> <span class="nv">database</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> <span class="nv">port</span><span class="p">:</span> <span class="n">port</span><span class="p">)</span>
+<pre class="highlight swift"><code><span class="k">let</span> <span class="nv">connection</span> <span class="o">=</span> <span class="kt">MySQLConnection</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span> <span class="nv">database</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> 
+                                 <span class="nv">port</span><span class="p">:</span> <span class="n">port</span><span class="p">,</span> <span class="nv">characterSet</span><span class="p">:</span> <span class="n">characterSet</span><span class="p">,</span> <span class="nv">copyBlobData</span><span class="p">:</span> <span class="n">copyBlobData</span><span class="p">)</span>
 </code></pre>
 
 <p><strong>Where:</strong>
-- <em>host</em> and <em>port</em> are the host and the port of the MySQL server
-- <em>user</em> - the user name
-- <em>password</em> - the user password
-- <em>database</em> - the database name</p>
+- <em>host</em> - hostname or IP of the MySQL server, defaults to localhost 
+- <em>user</em> - the user name, defaults to current user
+- <em>password</em> - the user password, defaults to no password
+- <em>database</em> - default database to use if specified
+- <em>port</em> - port number for the TCP/IP connection if connecting to server on a non-standard port (not 3306)
+- <em>characterSet</em> - MySQL character set to use for the connection
+- <em>copyBlobData</em> - Bool indicating whether or not to copy bytes to Data objects in QueryResult (defaults to true).<br>
+                   When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.<br>
+                   Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.<br>
+                   Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.  </p>
 
-<p><br>
-Alternatively, call:
+<p>All the connection parameters are optional, so if you were using a standard local MySQL server as the current user, you could simply use:
+<code>swift
+let connection = MySQLConnection(password: password)
+</code>
+<em>password</em> is also optional, but recommended.</p>
+
+<p>Alternatively, call:
 <code>swift
 let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(password)@\(host):\(port)/\(database)&quot;)!))
 </code></p>
@@ -130,7 +156,7 @@ let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(passwo
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-02-28)</p>
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-03-01)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
