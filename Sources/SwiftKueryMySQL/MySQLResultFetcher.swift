@@ -205,7 +205,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("Error fetching row: \(MySQLResultFetcher.getError(statement))")
+            print("ERROR: while fetching row: \(MySQLResultFetcher.getError(statement))")
             return nil
         }
 

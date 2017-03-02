@@ -105,7 +105,7 @@ public class MySQLConnection: Connection {
         if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
             if mysql_set_character_set(connection, characterSet) != 0 {
                 let defaultCharSet = String(cString: mysql_character_set_name(connection))
-                print("Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
+                print("WARNING: Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
             }
             onCompletion(nil) // success
         } else {
@@ -410,8 +410,12 @@ public class MySQLConnection: Connection {
             if bind.buffer != nil {
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
             }
-            bind.length.deallocate(capacity: 1)
-            bind.is_null.deallocate(capacity: 1)
+            if bind.length != nil {
+                bind.length.deallocate(capacity: 1)
+            }
+            if bind.is_null != nil {
+                bind.is_null.deallocate(capacity: 1)
+            }
         }
 
         if let bindPtr = bindPtr {
@@ -422,61 +426,110 @@ public class MySQLConnection: Connection {
         bindPtr = nil
     }
 
-    private func getInputBind<T>(_ parameter: T?) -> MYSQL_BIND {
-        let size: Int
-        let buffer: UnsafeMutableRawPointer?
+    private func getInputBind(_ parameter: Any?) -> MYSQL_BIND {
+        guard let parameter = parameter else {
+            var bind = MYSQL_BIND()
+            bind.buffer_type = MYSQL_TYPE_NULL
+            bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
+            bind.is_null.initialize(to: Int8(1))
+            return bind
+        }
 
-        if let parameter = parameter {
-            if parameter is String {
-                let collection = (parameter as! String).utf8
-                size = collection.count
-                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
-                typedBuffer.initialize(from: collection)
-                buffer = UnsafeMutableRawPointer(typedBuffer)
-            } else if parameter is [UInt8] {
-                let collection = parameter as! [UInt8]
-                size = collection.count
-                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
-                typedBuffer.initialize(from: collection)
-                buffer = UnsafeMutableRawPointer(typedBuffer)
-            } else if parameter is Data {
-                let data = parameter as! Data
-                size = data.count
-                let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
-                data.copyBytes(to: typedBuffer, count: size)
-                buffer = UnsafeMutableRawPointer(typedBuffer)
-            } else {
-                size = MemoryLayout<T>.size
-                let typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: 1)
-                typedBuffer.initialize(to: parameter)
-                buffer = UnsafeMutableRawPointer(typedBuffer)
-            }
-        } else {
-            size = 0
-            buffer = nil
+        let size: Int
+        let buffer: UnsafeMutableRawPointer
+        var unsigned = false
+
+        switch parameter {
+        case let string as String:
+            (size, buffer) = getSizeAndBuffer(string: string)
+        case let byteArray as [UInt8]:
+            size = byteArray.count
+            let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+            typedBuffer.initialize(from: byteArray)
+            buffer = UnsafeMutableRawPointer(typedBuffer)
+        case let data as Data:
+            size = data.count
+            let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+            data.copyBytes(to: typedBuffer, count: size)
+            buffer = UnsafeMutableRawPointer(typedBuffer)
+        case let float as Float:
+            (size, buffer) = getSizeAndBuffer(float)
+        case let double as Double:
+            (size, buffer) = getSizeAndBuffer(double)
+        case let bool as Bool:
+            (size, buffer) = getSizeAndBuffer(bool)
+        case let int as Int:
+            (size, buffer) = getSizeAndBuffer(int)
+        case let int as Int8:
+            (size, buffer) = getSizeAndBuffer(int)
+        case let int as Int16:
+            (size, buffer) = getSizeAndBuffer(int)
+        case let int as Int32:
+            (size, buffer) = getSizeAndBuffer(int)
+        case let int as Int64:
+            (size, buffer) = getSizeAndBuffer(int)
+        case let uint as UInt:
+            (size, buffer) = getSizeAndBuffer(uint)
+            unsigned = true
+        case let uint as UInt8:
+            (size, buffer) = getSizeAndBuffer(uint)
+            unsigned = true
+        case let uint as UInt16:
+            (size, buffer) = getSizeAndBuffer(uint)
+            unsigned = true
+        case let uint as UInt32:
+            (size, buffer) = getSizeAndBuffer(uint)
+            unsigned = true
+        case let uint as UInt64:
+            (size, buffer) = getSizeAndBuffer(uint)
+            unsigned = true
+        case let unicodeScalar as UnicodeScalar:
+            (size, buffer) = getSizeAndBuffer(unicodeScalar)
+            unsigned = true
+        case let dateTime as MYSQL_TIME:
+            (size, buffer) = getSizeAndBuffer(dateTime)
+        default:
+            print("WARNING: Unhandled parameter \(parameter) (type: \(type(of: parameter))). Will attempt to convert it to a String")
+            (size, buffer) = getSizeAndBuffer(string: String(describing: parameter))
         }
 
         var bind = MYSQL_BIND()
         bind.buffer_type = getType(parameter: parameter)
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = (parameter is UnsignedInteger || parameter is UnicodeScalar ? 1 : 0)
+        bind.is_unsigned = (unsigned ? 1 : 0)
 
         bind.buffer = buffer
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         bind.length.initialize(to: UInt(size))
 
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.is_null.initialize(to: (parameter == nil ? 1 : 0))
+        bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
+        bind.is_null.initialize(to: Int8(0))
 
         return bind
     }
 
-    private func getType(parameter: Any?) -> enum_field_types {
-        guard let parameter = parameter else {
-            return MYSQL_TYPE_NULL
-        }
+    private func getSizeAndBuffer<T>(_ parameter: T) -> (Int, UnsafeMutableRawPointer) {
+        let size = MemoryLayout<T>.size
+        let typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: 1)
+        typedBuffer.initialize(to: parameter)
+        return (size, UnsafeMutableRawPointer(typedBuffer))
+    }
 
+    private func getSizeAndBuffer(string: String) -> (Int, UnsafeMutableRawPointer) {
+        let utf8 = string.utf8
+        let size = utf8.count
+        let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+        typedBuffer.initialize(from: utf8)
+        return (size, UnsafeMutableRawPointer(typedBuffer))
+    }
+
+    private func getType(parameter: Any) -> enum_field_types {
         switch parameter {
+        case is String:
+            return MYSQL_TYPE_STRING
+        case is Data,
+             is [UInt8]:
+            return MYSQL_TYPE_BLOB
         case is Int8,
              is UInt8,
              is Bool:
@@ -488,7 +541,10 @@ public class MySQLConnection: Connection {
              is UInt32,
              is UnicodeScalar:
             return MYSQL_TYPE_LONG
-        case is Integer:       // any other integer types
+        case is Int,
+             is UInt,
+             is Int64,
+             is UInt64:
             return MYSQL_TYPE_LONGLONG
         case is Float:
             return MYSQL_TYPE_FLOAT
@@ -496,14 +552,8 @@ public class MySQLConnection: Connection {
             return MYSQL_TYPE_DOUBLE
         case is MYSQL_TIME:
             return MYSQL_TYPE_DATETIME
-        case is String:
-            return MYSQL_TYPE_STRING
-        case is Data,
-             is [UInt8]:
-            return MYSQL_TYPE_BLOB
         default:
-            print("Unhandled input parameter \(parameter) (type: \(type(of: parameter)))")
-            return MYSQL_TYPE_NULL
+            return MYSQL_TYPE_STRING
         }
     }
 }
