@@ -20,6 +20,6 @@ let package = Package(
     name: "SwiftKueryMySQL",
     dependencies: [
         .Package(url: "https://github.com/IBM-Swift/CMySQL.git", majorVersion: 0, minor: 1),
-        .Package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", majorVersion: 0, minor: 6),
+        .Package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", majorVersion: 0, minor: 7),
     ]
 )

@@ -130,25 +130,6 @@ public class MySQLConnection: Connection {
         return try query.build(queryBuilder: queryBuilder)
     }
 
-
-    // TODO - remove after changing Connection API
-    public func execute(query: Query, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parametersArray: [parameters], onCompletion: onCompletion)
-        }
-    }
-    public func execute(_ raw: String, parameters: [Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parametersArray: [parameters], onCompletion: onCompletion)
-    }
-    public func execute(query: Query, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
-    }
-    public func execute(_ raw: String, parameters: [String:Any], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
-    }
-    // TODO - remove after changing Connection API
-
-
     /// Execute a query.
     ///
     /// - Parameter query: The query to execute.
