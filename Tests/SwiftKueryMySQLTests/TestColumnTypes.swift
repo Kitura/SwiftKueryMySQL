@@ -42,6 +42,7 @@ class TestColumnTypes: MySQLTest {
     func testColumnTypes() {
         performTest(asyncTasks: { connection in
             let t = MyTable()
+            cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
@@ -103,6 +104,7 @@ class TestColumnTypes: MySQLTest {
     func testUnhandledParameterType() {
         performTest(asyncTasks: { connection in
             let t = MyTable()
+            cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
@@ -146,6 +148,7 @@ class TestColumnTypes: MySQLTest {
     func testBlobs(copyBlobData: Bool) {
         performTest(copyBlobData: copyBlobData, asyncTasks: { connection in
             let t = MyTable()
+            cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
@@ -157,14 +160,11 @@ class TestColumnTypes: MySQLTest {
 
             let rawInsert = "INSERT INTO " + t.tableName + " (idCol, blobCol) VALUES (?, ?)"
 
-            let insertedBlobs = [Data(repeating: 0x84, count: 96), Data(repeating: 0x70, count: 50)]
+            let insertedBlobs = [Data(repeating: 0x84, count: 10), Data(repeating: 0x70, count: 10000), Data(repeating: 0x52, count: 1), Data(repeating: 0x40, count: 10000)]
 
-            executeRawQueryWithParameters(rawInsert, connection: connection, parameters: [1, insertedBlobs[0]]) { result, rows in
-                XCTAssertEqual(result.success, true, "INSERT failed")
-                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-            }
+            let parametersArray = [[0, insertedBlobs[0]], [1, [UInt8](insertedBlobs[1])], [2, insertedBlobs[2]], [3, insertedBlobs[3]]]
 
-            executeRawQueryWithParameters(rawInsert, connection: connection, parameters: [2, [UInt8](insertedBlobs[1])]) { result, rows in
+            executeRawQueryWithParameters(rawInsert, connection: connection, parametersArray: parametersArray) { result, rows in
                 XCTAssertEqual(result.success, true, "INSERT failed")
                 XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
             }
@@ -189,7 +189,7 @@ class TestColumnTypes: MySQLTest {
                         index += 1
                     }
 
-                    XCTAssertEqual(index, 2, "Returned row count (\(index)) != Expected row count (2)")
+                    XCTAssertEqual(index, parametersArray.count, "Returned row count (\(index)) != Expected row count (\(parametersArray.count))")
 
                     if let firstSelectedBlob = firstSelectedBlob {
                         if copyBlobData {

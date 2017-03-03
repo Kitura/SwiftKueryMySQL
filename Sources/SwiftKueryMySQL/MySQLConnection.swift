@@ -320,15 +320,19 @@ public class MySQLConnection: Connection {
         }
 
         var binds = [MYSQL_BIND]()
+        var capacity = 0
         var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
 
         defer {
-            deallocateBinds(binds: &binds, bindPtr: &bindPtr)
+            deallocateBinds(binds: &binds, bindPtr: bindPtr, capacity: capacity)
         }
 
         if let parametersArray = parametersArray, parametersArray.count > 0 {
+            capacity = parametersArray[0].count
+            bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: capacity)
+
             do {
-                try allocateBinds(statement: statement, parameters: parametersArray[0], binds: &binds, bindPtr: &bindPtr)
+                try allocateBinds(statement: statement, parameters: parametersArray[0], binds: &binds, bindPtr: &bindPtr!)
             } catch {
                 mysql_stmt_close(statement)
                 onCompletion(.error(error))
@@ -352,10 +356,8 @@ public class MySQLConnection: Connection {
 
             if let parametersArray = parametersArray, parametersArray.count > 1 {
                 for i in 1 ..< parametersArray.count {
-                    deallocateBinds(binds: &binds, bindPtr: &bindPtr)
-
                     do {
-                        try allocateBinds(statement: statement, parameters: parametersArray[i], binds: &binds, bindPtr: &bindPtr)
+                        try allocateBinds(statement: statement, parameters: parametersArray[i], binds: &binds, bindPtr: &bindPtr!)
                     } catch {
                         onCompletion(.error(error))
                         return
@@ -389,15 +391,24 @@ public class MySQLConnection: Connection {
         }
     }
 
-    private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>?) throws {
+    private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>) throws {
 
-        for parameter in parameters {
-            binds.append(getInputBind(parameter))
+        if binds.isEmpty { // first parameter set, create new bind
+            for parameter in parameters {
+                var bind = MYSQL_BIND()
+                setBind(&bind, parameter)
+                binds.append(bind)
+            }
+        } else { // was previously created, reset existing binds
+            for (index, parameter) in parameters.enumerated() {
+                var bind = binds[index]
+                setBind(&bind, parameter)
+                binds[index] = bind
+            }
         }
 
-        bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
         for i in 0 ..< binds.count {
-            bindPtr![i] = binds[i]
+            bindPtr[i] = binds[i]
         }
 
         guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
@@ -405,7 +416,8 @@ public class MySQLConnection: Connection {
         }
     }
 
-    private func deallocateBinds(binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>?) {
+    private func deallocateBinds(binds: inout [MYSQL_BIND], bindPtr: UnsafeMutablePointer<MYSQL_BIND>?, capacity: Int) {
+
         for bind in binds {
             if bind.buffer != nil {
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
@@ -419,108 +431,112 @@ public class MySQLConnection: Connection {
         }
 
         if let bindPtr = bindPtr {
-            bindPtr.deallocate(capacity: binds.count)
+            bindPtr.deallocate(capacity: capacity)
         }
 
         binds.removeAll()
-        bindPtr = nil
     }
 
-    private func getInputBind(_ parameter: Any?) -> MYSQL_BIND {
-        guard let parameter = parameter else {
-            var bind = MYSQL_BIND()
-            bind.buffer_type = MYSQL_TYPE_NULL
+    private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?) {
+        if bind.is_null == nil {
             bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
-            bind.is_null.initialize(to: Int8(1))
-            return bind
         }
 
-        let size: Int
-        let buffer: UnsafeMutableRawPointer
-        var unsigned = false
+        guard let parameter = parameter else {
+            bind.buffer_type = MYSQL_TYPE_NULL
+            bind.is_null.initialize(to: 1)
+            return
+        }
+
+        bind.buffer_type = getType(parameter: parameter)
+        bind.is_null.initialize(to: 0)
+        bind.is_unsigned = 0
 
         switch parameter {
         case let string as String:
-            (size, buffer) = getSizeAndBuffer(string: string)
+            initialize(string: string, &bind)
         case let byteArray as [UInt8]:
-            size = byteArray.count
-            let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+            let typedBuffer = allocate(type: UInt8.self, capacity: byteArray.count, bind: &bind)
             typedBuffer.initialize(from: byteArray)
-            buffer = UnsafeMutableRawPointer(typedBuffer)
         case let data as Data:
-            size = data.count
-            let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
-            data.copyBytes(to: typedBuffer, count: size)
-            buffer = UnsafeMutableRawPointer(typedBuffer)
-        case let float as Float:
-            (size, buffer) = getSizeAndBuffer(float)
-        case let double as Double:
-            (size, buffer) = getSizeAndBuffer(double)
-        case let bool as Bool:
-            (size, buffer) = getSizeAndBuffer(bool)
-        case let int as Int:
-            (size, buffer) = getSizeAndBuffer(int)
-        case let int as Int8:
-            (size, buffer) = getSizeAndBuffer(int)
-        case let int as Int16:
-            (size, buffer) = getSizeAndBuffer(int)
-        case let int as Int32:
-            (size, buffer) = getSizeAndBuffer(int)
-        case let int as Int64:
-            (size, buffer) = getSizeAndBuffer(int)
-        case let uint as UInt:
-            (size, buffer) = getSizeAndBuffer(uint)
-            unsigned = true
-        case let uint as UInt8:
-            (size, buffer) = getSizeAndBuffer(uint)
-            unsigned = true
-        case let uint as UInt16:
-            (size, buffer) = getSizeAndBuffer(uint)
-            unsigned = true
-        case let uint as UInt32:
-            (size, buffer) = getSizeAndBuffer(uint)
-            unsigned = true
-        case let uint as UInt64:
-            (size, buffer) = getSizeAndBuffer(uint)
-            unsigned = true
-        case let unicodeScalar as UnicodeScalar:
-            (size, buffer) = getSizeAndBuffer(unicodeScalar)
-            unsigned = true
+            let typedBuffer = allocate(type: UInt8.self, capacity: data.count, bind: &bind)
+            data.copyBytes(to: typedBuffer, count: data.count)
         case let dateTime as MYSQL_TIME:
-            (size, buffer) = getSizeAndBuffer(dateTime)
+            initialize(dateTime, &bind)
+        case let float as Float:
+            initialize(float, &bind)
+        case let double as Double:
+            initialize(double, &bind)
+        case let bool as Bool:
+            initialize(bool, &bind)
+        case let int as Int:
+            initialize(int, &bind)
+        case let int as Int8:
+            initialize(int, &bind)
+        case let int as Int16:
+            initialize(int, &bind)
+        case let int as Int32:
+            initialize(int, &bind)
+        case let int as Int64:
+            initialize(int, &bind)
+        case let uint as UInt:
+            initialize(uint, &bind)
+            bind.is_unsigned = 1
+        case let uint as UInt8:
+            initialize(uint, &bind)
+            bind.is_unsigned = 1
+        case let uint as UInt16:
+            initialize(uint, &bind)
+            bind.is_unsigned = 1
+        case let uint as UInt32:
+            initialize(uint, &bind)
+            bind.is_unsigned = 1
+        case let uint as UInt64:
+            initialize(uint, &bind)
+            bind.is_unsigned = 1
+        case let unicodeScalar as UnicodeScalar:
+            initialize(unicodeScalar, &bind)
+            bind.is_unsigned = 1
         default:
             print("WARNING: Unhandled parameter \(parameter) (type: \(type(of: parameter))). Will attempt to convert it to a String")
-            (size, buffer) = getSizeAndBuffer(string: String(describing: parameter))
+            initialize(string: String(describing: parameter), &bind)
+        }
+    }
+
+    private func allocate<T>(type: T.Type, capacity: Int, bind: inout MYSQL_BIND) -> UnsafeMutablePointer<T> {
+
+        let length = UInt(capacity * MemoryLayout<T>.size)
+        if bind.length == nil {
+            bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
+        }
+        bind.length.initialize(to: length)
+
+        let typedBuffer: UnsafeMutablePointer<T>
+        if let buffer = bind.buffer, bind.buffer_length >= length {
+            typedBuffer = buffer.assumingMemoryBound(to: type)
+        } else {
+            if bind.buffer != nil {
+                // deallocate existing smaller buffer
+                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+            }
+
+            typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: capacity)
+            bind.buffer = UnsafeMutableRawPointer(typedBuffer)
+            bind.buffer_length = length
         }
 
-        var bind = MYSQL_BIND()
-        bind.buffer_type = getType(parameter: parameter)
-        bind.buffer_length = UInt(size)
-        bind.is_unsigned = (unsigned ? 1 : 0)
-
-        bind.buffer = buffer
-        bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.length.initialize(to: UInt(size))
-
-        bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
-        bind.is_null.initialize(to: Int8(0))
-
-        return bind
+        return typedBuffer
     }
 
-    private func getSizeAndBuffer<T>(_ parameter: T) -> (Int, UnsafeMutableRawPointer) {
-        let size = MemoryLayout<T>.size
-        let typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: 1)
+    private func initialize<T>(_ parameter: T, _ bind: inout MYSQL_BIND) {
+        let typedBuffer = allocate(type: type(of: parameter), capacity: 1, bind: &bind)
         typedBuffer.initialize(to: parameter)
-        return (size, UnsafeMutableRawPointer(typedBuffer))
     }
 
-    private func getSizeAndBuffer(string: String) -> (Int, UnsafeMutableRawPointer) {
+    private func initialize(string: String, _ bind: inout MYSQL_BIND) {
         let utf8 = string.utf8
-        let size = utf8.count
-        let typedBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+        let typedBuffer = allocate(type: UInt8.self, capacity: utf8.count, bind: &bind)
         typedBuffer.initialize(from: utf8)
-        return (size, UnsafeMutableRawPointer(typedBuffer))
     }
 
     private func getType(parameter: Any) -> enum_field_types {
