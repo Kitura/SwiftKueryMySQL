@@ -78,26 +78,22 @@ class TestColumnTypes: MySQLTest {
             let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2017-03-06", "13:41:05", "2017-03-06 13:41:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", "{\"y\": 2}", nil, "abc"]
 
             let parametersCount = 500
-            var parametersArray = [[Any?]]()
-            if batchParameters {
-                for _ in 0 ..< parametersCount {
-                    parametersArray.append(parameters1)
-                    parametersArray.append(parameters2)
-                }
-            } else {
-                parametersArray.append(parameters1)
-                parametersArray.append(parameters2)
-            }
 
             var error: Error? = nil
             let start = Date.timeIntervalSinceReferenceDate
             if batchParameters {
+                var parametersArray = Array(repeating: parameters2, count: parametersCount*2)
+                for index in 0 ..< parametersCount {
+                    parametersArray[index * 2] = parameters1
+                }
+
                 connection.execute(rawInsert, parametersArray: parametersArray) { result in
                     error = result.asError
                 }
             } else {
-                for _ in 0 ..< parametersCount {
-                    connection.execute(rawInsert, parametersArray: parametersArray) { result in
+                for index in 0 ..< parametersCount*2 {
+                    let parameters = index % 2 == 0 ? parameters1 : parameters2
+                    connection.execute(rawInsert, parameters: parameters) { result in
                         error = result.asError
                     }
                     if error != nil {
