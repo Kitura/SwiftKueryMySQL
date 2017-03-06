@@ -62,18 +62,32 @@ class TestColumnTypes: MySQLTest {
 
             let rawInsert = "INSERT INTO " + t.tableName + " (tinyintCol, smallintCol, unsignedmediumintCol, intCol, bigintCol, floatCol, doubleCol, dateCol, timeCol, datetimeCol, mySqlTimeCol, blobCol, enumCol, setCol, jsonCol, nulCol, emptyCol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
-            var ts = MYSQL_TIME()
-            ts.year = 2017;
-            ts.month = 03;
-            ts.day = 03;
-            ts.hour = 11;
-            ts.minute = 22;
-            ts.second = 59;
+            var ts1 = MYSQL_TIME()
+            ts1.year = 2017
+            ts1.month = 03
+            ts1.day = 03
+            ts1.hour = 11
+            ts1.minute = 22
+            ts1.second = 59
 
-            let parameters: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-02-27", "13:51:52", "2017-02-27 13:51:52", ts, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", "{\"x\": 1}", nil, ""]
+            var ts2 = ts1
+            ts2.year = 2018
 
-            let parametersCount = 1000
-            let parametersArray = Array(repeating: parameters, count: batchParameters ? parametersCount : 1)
+            let parameters1: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-02-27", "13:51:52", "2017-02-27 13:51:52", ts1, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", "{\"x\": 1}", nil, ""]
+
+            let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2017-03-06", "13:41:05", "2017-03-06 13:41:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", "{\"y\": 2}", nil, "abc"]
+
+            let parametersCount = 500
+            var parametersArray = [[Any?]]()
+            if batchParameters {
+                for _ in 0 ..< parametersCount {
+                    parametersArray.append(parameters1)
+                    parametersArray.append(parameters2)
+                }
+            } else {
+                parametersArray.append(parameters1)
+                parametersArray.append(parameters2)
+            }
 
             var error: Error? = nil
             let start = Date.timeIntervalSinceReferenceDate
@@ -106,35 +120,39 @@ class TestColumnTypes: MySQLTest {
                 XCTAssertNotNil(rows, "SELECT returned no rows")
                 if let rows = rows {
                     let rowCount = rows[0][0]!
-                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount), "Incorrect number of rows inserted: \(rowCount) (type: \(type(of: rowCount)))")
+                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount * 2), "Incorrect number of rows inserted: \(rowCount) (type: \(type(of: rowCount)))")
                 }
             }
 
-            let rawSelect = "SELECT * from " + t.tableName + " limit 1"
-            executeRawQuery(rawSelect, connection: connection) { result, rows in
+            let rawSelect = "SELECT * from " + t.tableName
+            connection.execute(rawSelect) { result in
                 XCTAssertEqual(result.success, true, "SELECT failed")
                 XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                XCTAssertNotNil(rows, "SELECT returned no rows")
-                if let rows = rows {
-                    for (index, selected) in rows[0].enumerated() {
-                        let inserted = parameters[index]
-                        if let selected = selected, let inserted = inserted {
-                            if inserted is Data {
-                                let insertedData = inserted as! Data
-                                let selectedData = selected as! Data
-                                XCTAssertEqual(insertedData, selectedData, "Column \(index+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
-                            } else if inserted is MYSQL_TIME {
-                                let time = inserted as! MYSQL_TIME
-                                let selectedTime = selected as! String
-                                let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
-                                XCTAssertEqual(formattedTime, selectedTime, "Column \(index+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
+                let resultSet = result.asResultSet
+                XCTAssertNotNil(resultSet, "SELECT returned no resultSet")
+                if let resultSet = resultSet {
+                    for (rowIndex, row) in resultSet.rows.enumerated() {
+                        let parameters = rowIndex % 2 == 0 ? parameters1 : parameters2
+                        for (columnIndex, selected) in row.enumerated() {
+                            let inserted = parameters[columnIndex]
+                            if let selected = selected, let inserted = inserted {
+                                if inserted is Data {
+                                    let insertedData = inserted as! Data
+                                    let selectedData = selected as! Data
+                                    XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
+                                } else if inserted is MYSQL_TIME {
+                                    let time = inserted as! MYSQL_TIME
+                                    let selectedTime = selected as! String
+                                    let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
+                                    XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
+                                } else {
+                                    XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
+                                }
+                            } else if inserted == nil {
+                                XCTAssertNil(selected, "value: \(selected) selected instead of inserted value: nil for column \(index)")
                             } else {
-                                XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(index+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
+                                XCTFail("nil value selected instead of inserted value: \(inserted) for column \(index)")
                             }
-                        } else if inserted == nil {
-                            XCTAssertNil(selected, "value: \(selected) selected instead of inserted value: nil for column \(index)")
-                        } else {
-                            XCTFail("nil value selected instead of inserted value: \(inserted) for column \(index)")
                         }
                     }
                 }

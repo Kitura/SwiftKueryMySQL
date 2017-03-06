@@ -387,22 +387,20 @@ public class MySQLConnection: Connection {
 
     private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>) throws {
 
-        if binds.isEmpty { // first parameter set, create new bind
-            for parameter in parameters {
+        if binds.isEmpty { // first parameter set, create new bind and bind it to the parameter
+            for (index, parameter) in parameters.enumerated() {
                 var bind = MYSQL_BIND()
                 setBind(&bind, parameter)
                 binds.append(bind)
+                bindPtr[index] = bind
             }
-        } else { // was previously created, reset existing binds
+        } else { // bind was previously created, re-initialize value
             for (index, parameter) in parameters.enumerated() {
                 var bind = binds[index]
                 setBind(&bind, parameter)
                 binds[index] = bind
+                bindPtr[index] = bind
             }
-        }
-
-        for i in 0 ..< binds.count {
-            bindPtr[i] = binds[i]
         }
 
         guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
