@@ -52,7 +52,7 @@ First create an instance of `MySQLConnection` by calling:
 
 ```swift
 let connection = MySQLConnection(host: host, user: user, password: password, database: database, 
-                                 port: port, characterSet: characterSet, copyBlobData: copyBlobData)
+                                 port: port, characterSet: characterSet)
 ```
 **Where:**
 - *host* - hostname or IP of the MySQL server, defaults to localhost 
@@ -61,10 +61,6 @@ let connection = MySQLConnection(host: host, user: user, password: password, dat
 - *database* - default database to use if specified
 - *port* - port number for the TCP/IP connection if connecting to server on a non-standard port (not 3306)
 - *characterSet* - MySQL character set to use for the connection
-- *copyBlobData* - Bool indicating whether or not to copy bytes to Data objects in QueryResult (defaults to true).  
-                   When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.  
-                   Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.  
-                   Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.  
 
 All the connection parameters are optional, so if you were using a standard local MySQL server as the current user, you could simply use:
 ```swift

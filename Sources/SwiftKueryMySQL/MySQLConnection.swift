@@ -39,7 +39,6 @@ public class MySQLConnection: Connection {
     private let unixSocket: String?
     private let clientFlag: UInt
     private let characterSet: String
-    private let copyBlobData: Bool
 
     private var connection: UnsafeMutablePointer<MYSQL>?
     private var inTransaction = false
@@ -62,11 +61,7 @@ public class MySQLConnection: Connection {
     /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
     /// - Parameter clientFlag: MySQL client options
     /// - Parameter characterSet: MySQL character set to use for the connection
-    /// - Parameter copyBlobData: Whether or not to copy bytes to Data objects in QueryResult (defaults to true).
-    ///               When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.
-    ///               Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.
-    ///               Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.
-    public init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, copyBlobData: Bool = true) {
+    public init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil) {
 
         MySQLConnection.initOnce
 
@@ -78,7 +73,6 @@ public class MySQLConnection: Connection {
         self.unixSocket = unixSocket
         self.clientFlag = clientFlag
         self.characterSet = characterSet ?? "utf8"
-        self.copyBlobData = copyBlobData
     }
 
     /// Initialize an instance of MySQLConnection.
@@ -381,7 +375,7 @@ public class MySQLConnection: Connection {
         }
 
         do {
-            if let resultFetcher = try MySQLResultFetcher(statement: statement, resultMetadata: resultMetadata, copyBlobData: copyBlobData) {
+            if let resultFetcher = try MySQLResultFetcher(statement: statement, resultMetadata: resultMetadata) {
                 onCompletion(.resultSet(ResultSet(resultFetcher)))
             } else {
                 onCompletion(.successNoData)

@@ -28,10 +28,10 @@ class TestColumnTypes: MySQLTest {
 
     static var allTests: [(String, (TestColumnTypes) -> () throws -> Void)] {
         return [
-            ("testColumnTypes", testColumnTypes),
+            ("testColumnTypesNoBatch", testColumnTypesNoBatch),
+            ("testColumnTypesBatch", testColumnTypesBatch),
             ("testUnhandledParameterType", testUnhandledParameterType),
-            ("testBlobs", testBlobs),
-            ("testBlobsNoCopyBytes", testBlobsNoCopyBytes)
+            ("testBlobs", testBlobs)
         ]
     }
 
@@ -39,8 +39,16 @@ class TestColumnTypes: MySQLTest {
         let tableName = "TestColumnTypes"
     }
 
-    func testColumnTypes() {
-        performTest(asyncTasks: { connection in
+    func testColumnTypesNoBatch() {
+        testColumnTypes(batchParameters: false)
+    }
+
+    func testColumnTypesBatch() {
+        testColumnTypes(batchParameters: true)
+    }
+
+    func testColumnTypes(batchParameters: Bool) {
+        performTest(timeout: 60, asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -64,36 +72,69 @@ class TestColumnTypes: MySQLTest {
 
             let parameters: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-02-27", "13:51:52", "2017-02-27 13:51:52", ts, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", "{\"x\": 1}", nil, ""]
 
-            executeRawQueryWithParameters(rawInsert, connection: connection, parameters: parameters) { result, rows in
-                XCTAssertEqual(result.success, true, "INSERT failed")
-                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let parametersCount = 1000
+            let parametersArray = Array(repeating: parameters, count: batchParameters ? parametersCount : 1)
 
-                let rawSelect = "SELECT * from " + t.tableName
-                executeRawQuery(rawSelect, connection: connection) { result, rows in
-                    XCTAssertEqual(result.success, true, "SELECT failed")
-                    XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                    XCTAssertNotNil(rows, "SELECT returned no rows")
-                    if let rows = rows {
-                        for (index, selected) in rows[0].enumerated() {
-                            let inserted = parameters[index]
-                            if let selected = selected, let inserted = inserted {
-                                if inserted is Data {
-                                    let insertedData = inserted as! Data
-                                    let selectedData = selected as! Data
-                                    XCTAssertEqual(insertedData, selectedData, "Column \(index+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
-                                } else if inserted is MYSQL_TIME {
-                                    let time = inserted as! MYSQL_TIME
-                                    let selectedTime = selected as! String
-                                    let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
-                                    XCTAssertEqual(formattedTime, selectedTime, "Column \(index+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
-                                } else {
-                                    XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(index+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
-                                }
-                            } else if inserted == nil {
-                                XCTAssertNil(selected, "value: \(selected) selected instead of inserted value: nil for column \(index)")
+            var error: Error? = nil
+            let start = Date.timeIntervalSinceReferenceDate
+            if batchParameters {
+                connection.execute(rawInsert, parametersArray: parametersArray) { result in
+                    error = result.asError
+                }
+            } else {
+                for _ in 0 ..< parametersCount {
+                    connection.execute(rawInsert, parametersArray: parametersArray) { result in
+                        error = result.asError
+                    }
+                    if error != nil {
+                        break
+                    }
+                }
+            }
+            let end = Date.timeIntervalSinceReferenceDate
+
+            if let error = error {
+                XCTFail("Error in INSERT: \(error)")
+            } else {
+                print("INSERT with batchParameters: \(batchParameters) took \(end-start) seconds for \(parametersCount) rows")
+            }
+
+            let selectCount = "SELECT count(*) from " + t.tableName
+            executeRawQuery(selectCount, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "SELECT failed")
+                XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
+                XCTAssertNotNil(rows, "SELECT returned no rows")
+                if let rows = rows {
+                    let rowCount = rows[0][0]!
+                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount), "Incorrect number of rows inserted: \(rowCount) (type: \(type(of: rowCount)))")
+                }
+            }
+
+            let rawSelect = "SELECT * from " + t.tableName + " limit 1"
+            executeRawQuery(rawSelect, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "SELECT failed")
+                XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
+                XCTAssertNotNil(rows, "SELECT returned no rows")
+                if let rows = rows {
+                    for (index, selected) in rows[0].enumerated() {
+                        let inserted = parameters[index]
+                        if let selected = selected, let inserted = inserted {
+                            if inserted is Data {
+                                let insertedData = inserted as! Data
+                                let selectedData = selected as! Data
+                                XCTAssertEqual(insertedData, selectedData, "Column \(index+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
+                            } else if inserted is MYSQL_TIME {
+                                let time = inserted as! MYSQL_TIME
+                                let selectedTime = selected as! String
+                                let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
+                                XCTAssertEqual(formattedTime, selectedTime, "Column \(index+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
                             } else {
-                                XCTFail("nil value selected instead of inserted value: \(inserted) for column \(index)")
+                                XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(index+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                             }
+                        } else if inserted == nil {
+                            XCTAssertNil(selected, "value: \(selected) selected instead of inserted value: nil for column \(index)")
+                        } else {
+                            XCTFail("nil value selected instead of inserted value: \(inserted) for column \(index)")
                         }
                     }
                 }
@@ -138,15 +179,7 @@ class TestColumnTypes: MySQLTest {
     }
 
     func testBlobs() {
-        testBlobs(copyBlobData: true)
-    }
-
-    func testBlobsNoCopyBytes() {
-        testBlobs(copyBlobData: false)
-    }
-
-    func testBlobs(copyBlobData: Bool) {
-        performTest(copyBlobData: copyBlobData, asyncTasks: { connection in
+        performTest(asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -177,27 +210,14 @@ class TestColumnTypes: MySQLTest {
 
                 if let resultSet = result.asResultSet {
                     var index = 0
-                    var firstSelectedBlob: Data? = nil
                     for row in resultSet.rows {
                         let selectedBlob1 = row[1] as! Data
-                        if index == 0 {
-                            firstSelectedBlob = selectedBlob1
-                        }
-
                         XCTAssertEqual(selectedBlob1, insertedBlobs[index], "Inserted Data (\(insertedBlobs[index].hexString())) is not equal to selected Data (\(selectedBlob1.hexString()))")
 
                         index += 1
                     }
 
                     XCTAssertEqual(index, parametersArray.count, "Returned row count (\(index)) != Expected row count (\(parametersArray.count))")
-
-                    if let firstSelectedBlob = firstSelectedBlob {
-                        if copyBlobData {
-                            XCTAssertEqual(firstSelectedBlob, insertedBlobs[0], "Inserted Data (\(insertedBlobs[0].hexString())) is not equal to first selected Data (\(firstSelectedBlob.hexString()))")
-                        } else {
-                            XCTAssertNotEqual(firstSelectedBlob, insertedBlobs[0], "Inserted Data (\(insertedBlobs[0].hexString())) is equal to first selected Data (\(firstSelectedBlob.hexString()))")
-                        }
-                    }
                 }
             }
         })

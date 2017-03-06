@@ -31,12 +31,11 @@ public class MySQLResultFetcher: ResultFetcher {
     private let binds: [MYSQL_BIND]
 
     private let fieldNames: [String]
-    private let copyBlobData: Bool
 
     private var row: [Any?]?
     private var hasMoreRows = true
 
-    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>, copyBlobData: Bool) throws {
+    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
         guard let fields = mysql_fetch_fields(resultMetadata) else {
             throw MySQLResultFetcher.initError(statement)
         }
@@ -68,7 +67,6 @@ public class MySQLResultFetcher: ResultFetcher {
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
-        self.copyBlobData = copyBlobData
 
         self.row = buildRow()
         if self.row == nil {
@@ -246,11 +244,7 @@ public class MySQLResultFetcher: ResultFetcher {
                  MYSQL_TYPE_MEDIUM_BLOB,
                  MYSQL_TYPE_LONG_BLOB,
                  MYSQL_TYPE_BIT:
-                if copyBlobData {
-                    row.append(Data(bytes: buffer, count: getLength(bind)))
-                } else {
-                    row.append(Data(bytesNoCopy: buffer, count: getLength(bind), deallocator: Data.Deallocator.none))
-                }
+                row.append(Data(bytes: buffer, count: getLength(bind)))
             case MYSQL_TYPE_TIME:
                 let time = buffer.load(as: MYSQL_TIME.self)
                 row.append("\(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")

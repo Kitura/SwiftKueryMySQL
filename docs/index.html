@@ -112,7 +112,7 @@ swift package generate-xcodeproj
 
 <p>First create an instance of <code>MySQLConnection</code> by calling:</p>
 <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">connection</span> <span class="o">=</span> <span class="kt">MySQLConnection</span><span class="p">(</span><span class="nv">host</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="nv">password</span><span class="p">:</span> <span class="n">password</span><span class="p">,</span> <span class="nv">database</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> 
-                                 <span class="nv">port</span><span class="p">:</span> <span class="n">port</span><span class="p">,</span> <span class="nv">characterSet</span><span class="p">:</span> <span class="n">characterSet</span><span class="p">,</span> <span class="nv">copyBlobData</span><span class="p">:</span> <span class="n">copyBlobData</span><span class="p">)</span>
+                                 <span class="nv">port</span><span class="p">:</span> <span class="n">port</span><span class="p">,</span> <span class="nv">characterSet</span><span class="p">:</span> <span class="n">characterSet</span><span class="p">)</span>
 </code></pre>
 
 <p><strong>Where:</strong>
@@ -121,11 +121,7 @@ swift package generate-xcodeproj
 - <em>password</em> - the user password, defaults to no password
 - <em>database</em> - default database to use if specified
 - <em>port</em> - port number for the TCP/IP connection if connecting to server on a non-standard port (not 3306)
-- <em>characterSet</em> - MySQL character set to use for the connection
-- <em>copyBlobData</em> - Bool indicating whether or not to copy bytes to Data objects in QueryResult (defaults to true).<br>
-                   When false, the underlying buffer is reused for blobs in each row which can be faster for large blobs.<br>
-                   Do NOT set to false if you use queryResult.asRows or if you keep a reference to returned blob data objects.<br>
-                   Set to false only if you use queryResult.asResultSet and finish processing row blob data before moving to the next row.  </p>
+- <em>characterSet</em> - MySQL character set to use for the connection</p>
 
 <p>All the connection parameters are optional, so if you were using a standard local MySQL server as the current user, you could simply use:
 <code>swift
@@ -138,13 +134,27 @@ let connection = MySQLConnection(password: password)
 let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(password)@\(host):\(port)/\(database)&quot;)!))
 </code></p>
 
-<p>To establish a connection call:</p>
-<pre class="highlight swift"><code><span class="kt">MySQLConnection</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="nv">onCompletion</span><span class="p">:</span> <span class="p">(</span><span class="kt">QueryError</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+<p>To establish a connection and execute queries:</p>
+<pre class="highlight swift"><code><span class="n">connection</span><span class="o">.</span><span class="nf">connect</span><span class="p">()</span> <span class="p">{</span> <span class="n">error</span> <span class="k">in</span>
+   <span class="c1">// if error is nil, connect() was successful</span>
+   <span class="k">let</span> <span class="nv">query</span> <span class="o">=</span> <span class="kt">Select</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">table</span><span class="p">)</span>
+   <span class="n">connection</span><span class="o">.</span><span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="n">query</span><span class="p">)</span> <span class="p">{</span> <span class="n">queryResult</span> <span class="k">in</span>
+      <span class="k">if</span> <span class="k">let</span> <span class="nv">resultSet</span> <span class="o">=</span> <span class="n">queryResult</span><span class="o">.</span><span class="n">asResultSet</span> <span class="p">{</span>
+         <span class="k">for</span> <span class="n">row</span> <span class="k">in</span> <span class="n">resultSet</span><span class="o">.</span><span class="n">rows</span> <span class="p">{</span>
+            <span class="c1">// process each row</span>
+         <span class="p">}</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
 </code></pre>
 
-<p>If you want to share a connection instance between multiple threads use <code>MySQLThreadSafeConnection</code> instead of <code>MySQLConnection</code></p>
-
 <p>You now have a connection that can be used to execute SQL queries created using Swift-Kuery. View the <a href="https://github.com/IBM-Swift/Swift-Kuery">Kuery</a> documentation for more information.</p>
+
+<p>If you want to share a connection instance between multiple threads use <code>MySQLThreadSafeConnection</code> instead of <code>MySQLConnection</code>
+<code>swift
+let threadSafeConnection = MySQLThreadSafeConnection(password: password)
+</code>
+A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads with the same connection.</p>
 <a href='#license' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='license'>License</h2>
 
 <p>This library is licensed under Apache 2.0. Full license text is available in <a href="LICENSE.txt">LICENSE</a>.</p>
@@ -156,7 +166,7 @@ let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(passwo
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-03-01)</p>
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-03-06)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

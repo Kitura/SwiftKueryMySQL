@@ -19,11 +19,11 @@ import Dispatch
 import Foundation
 
 import SwiftKuery
-@testable import SwiftKueryMySQL
+import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
-    func performTest(copyBlobData: Bool = true, line: Int = #line, asyncTasks: @escaping (MySQLConnection) -> Void...) {
-        guard let connection = createConnection(taskCount: asyncTasks.count, copyBlobData: copyBlobData) else {
+    func performTest(timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (MySQLConnection) -> Void...) {
+        guard let connection = createConnection(taskCount: asyncTasks.count) else {
             return
         }
 
@@ -57,13 +57,13 @@ class MySQLTest: XCTestCase {
             XCTFail(error.description)
         } else {
             // wait for all async tasks to finish
-            waitForExpectations(timeout: 10) { error in
+            waitForExpectations(timeout: timeout) { error in
                 XCTAssertNil(error)
             }
         }
     }
 
-    private func createConnection(taskCount: Int, copyBlobData: Bool) -> MySQLConnection? {
+    private func createConnection(taskCount: Int) -> MySQLConnection? {
         do {
             let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
             let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
@@ -86,11 +86,11 @@ class MySQLTest: XCTestCase {
                     randomBinary = arc4random_uniform(2)
                 #endif
 
-                if !copyBlobData || randomBinary == 0 {
+                if randomBinary == 0 {
                     if taskCount > 1 {
-                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port, copyBlobData: copyBlobData)
+                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port)
                     } else {
-                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port, copyBlobData: copyBlobData)
+                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port)
                     }
                 } else {
                     var urlString = "mysql://"
