@@ -1,0 +1,11 @@
+wget https://repo.mysql.com//mysql-apt-config_0.8.2-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.2-1_all.deb
+sudo apt-get update
+sudo apt-get install -y mysql-server
+sudo service mysql start
+
+mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
+
+swift build
