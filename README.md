@@ -1,9 +1,7 @@
 # SwiftKueryMySQL
 MySQL plugin for Swift-Kuery framework
 
-<!-- 
 [![Build Status - Master](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL.svg?branch=master)](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL)
--->
 ![macOS](https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat)
 ![Linux](https://img.shields.io/badge/os-linux-green.svg?style=flat)
 ![Apache 2](https://img.shields.io/badge/license-Apache2-blue.svg?style=flat)
@@ -72,9 +70,18 @@ Alternatively, call:
 ```swift
 let connection = MySQLConnection(url: URL(string: "mysql://\(user):\(password)@\(host):\(port)/\(database)")!))
 ```
+You now have a connection that can be used to execute SQL queries created using Swift-Kuery.
 
-To establish a connection and execute queries:
 
+If you want to share a connection instance between multiple threads use `MySQLThreadSafeConnection` instead of `MySQLConnection`:
+```swift
+let connection = MySQLThreadSafeConnection(host: host, user: user, password: password, database: database, 
+                                 port: port, characterSet: characterSet)
+```
+A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads sharing the same connection.
+
+
+To connect to the server and execute a query:
 ```swift
 connection.connect() { error in
    // if error is nil, connect() was successful
@@ -89,13 +96,7 @@ connection.connect() { error in
 }
 ```
 
-You now have a connection that can be used to execute SQL queries created using Swift-Kuery. View the [Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for more information.
-
-If you want to share a connection instance between multiple threads use `MySQLThreadSafeConnection` instead of `MySQLConnection`
-```swift
-let threadSafeConnection = MySQLThreadSafeConnection(password: password)
-```
-A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads with the same connection.
+View the [Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Kuery framework.
 
 ## License
 This library is licensed under Apache 2.0. Full license text is available in [LICENSE](LICENSE.txt).
