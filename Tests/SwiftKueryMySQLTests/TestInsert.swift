@@ -107,7 +107,7 @@ class TestInsert: MySQLTest {
                     XCTAssertEqual(result.success, true, "SELECT failed")
                     XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
                     XCTAssertNotNil(rows, "SELECT returned no rows")
-                    XCTAssertEqual(rows!.count, 9, "INSERT returned wrong number of rows: \(rows!.count) instead of 9")
+                    XCTAssertEqual(rows?.count, 9, "INSERT returned wrong number of rows: \(String(describing: rows?.count)) instead of 9")
 
                     let drop = Raw(query: "DROP TABLE", table: t)
                     executeQuery(query: drop, connection: connection) { result, rows in

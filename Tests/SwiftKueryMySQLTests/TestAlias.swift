@@ -58,7 +58,7 @@ class TestAlias: MySQLTest {
                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                             XCTAssertNotNil(rows, "SELECT returned no rows")
                             let resultSet = result.asResultSet!
-                            XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                            XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
                             XCTAssertEqual(resultSet.titles[1], "number", "Wrong column name: \(resultSet.titles[1]) instead of 'number'")
                             XCTAssertEqual(resultSet.titles[0], "fruit name", "Wrong column name: \(resultSet.titles[0]) instead of 'fruit name'")
 
@@ -67,7 +67,7 @@ class TestAlias: MySQLTest {
                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                 XCTAssertNotNil(rows, "SELECT returned no rows")
                                 let resultSet = result.asResultSet!
-                                XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
                                 XCTAssertEqual(resultSet.titles[0], "a", "Wrong column name: \(resultSet.titles[0]) instead of 'a'")
                                 XCTAssertEqual(resultSet.titles[1], "b", "Wrong column name: \(resultSet.titles[1]) instead of 'b'")
 
@@ -77,7 +77,7 @@ class TestAlias: MySQLTest {
                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                     XCTAssertNotNil(rows, "SELECT returned no rows")
                                     let resultSet = result.asResultSet!
-                                    XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                    XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
                                     XCTAssertEqual(resultSet.titles[0], "a", "Wrong column name: \(resultSet.titles[0]) instead of 'a'")
                                 }
                             }

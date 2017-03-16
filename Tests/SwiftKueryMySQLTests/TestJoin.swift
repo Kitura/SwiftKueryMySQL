@@ -102,16 +102,16 @@ class TestJoin: MySQLTest {
                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                     XCTAssertNotNil(rows, "SELECT returned no rows")
                                                     let resultSet = result.asResultSet!
-                                                    XCTAssertEqual(rows!.count, 4, "SELECT returned wrong number of rows: \(rows!.count) instead of 4")
+                                                    XCTAssertEqual(rows?.count, 4, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 4")
                                                     let titles = resultSet.titles
                                                     XCTAssertEqual(titles[0], "a", "Wrong column name: \(titles[0]) instead of 'a'")
                                                     XCTAssertEqual(titles[1], "b", "Wrong column name: \(titles[1]) instead of 'b'")
                                                     XCTAssertEqual(titles[2], "c", "Wrong column name: \(titles[2]) instead of 'c'")
                                                     XCTAssertEqual(titles[3], "b", "Wrong column name: \(titles[3]) instead of 'b'")
-                                                    XCTAssertEqual(rows![0][0]! as! String, "apricot", "Wrong value in row 0 column 0: \(rows![0][0]) instead of 'apricot'")
-                                                    XCTAssertEqual(rows![1][0]! as! String, "banana", "Wrong value in row 0 column 0: \(rows![1][0]) instead of 'banana'")
-                                                    XCTAssertEqual(rows![2][0]! as! String, "apple", "Wrong value in row 0 column 0: \(rows![2][0]) instead of apple")
-                                                    XCTAssertEqual(rows![3][0]! as! String, "banana", "Wrong value in row 0 column 0: \(rows![3][0]) instead of 'banana'")
+                                                    XCTAssertEqual(rows?[0][0] as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[0][0])) instead of 'apricot'")
+                                                    XCTAssertEqual(rows?[1][0]as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[1][0])) instead of 'banana'")
+                                                    XCTAssertEqual(rows?[2][0]as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[2][0])) instead of apple")
+                                                    XCTAssertEqual(rows?[3][0]as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[3][0])) instead of 'banana'")
 
                                                     let t1 = myTable1.as("t1")
                                                     let t2 = myTable2.as("t2")
@@ -124,9 +124,9 @@ class TestJoin: MySQLTest {
                                                     executeQuery(query: s2, connection: connection) { result, rows in
                                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                                         XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
-                                                        XCTAssertEqual(rows!.count, 2, "SELECT returned wrong number of rows: \(rows!.count) instead of 2")
-                                                        XCTAssertEqual(rows![0][1]! as! String, "apricot", "Wrong value in row 0 column 0: \(rows![0][1]) instead of 'apricot'")
-                                                        XCTAssertEqual(rows![1][1]! as! String, "apple", "Wrong value in row 0 column 0: \(rows![1][1]) instead of 'apple'")
+                                                        XCTAssertEqual(rows?.count, 2, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 2")
+                                                        XCTAssertEqual(rows?[0][1]as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[0][1])) instead of 'apricot'")
+                                                        XCTAssertEqual(rows?[1][1]as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[1][1])) instead of 'apple'")
 
                                                         let s3 = Select(from: myTable1)
                                                             .leftJoin(myTable2)
@@ -134,7 +134,7 @@ class TestJoin: MySQLTest {
                                                         executeQuery(query: s3, connection: connection) { result, rows in
                                                             XCTAssertEqual(result.success, true, "SELECT failed")
                                                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
-                                                            XCTAssertEqual(rows!.count, 8, "SELECT returned wrong number of rows: \(rows!.count) instead of 8")
+                                                            XCTAssertEqual(rows?.count, 8, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 8")
 
                                                             let s4 = Select(from: t1)
                                                                 .leftJoin(t2)
@@ -147,7 +147,7 @@ class TestJoin: MySQLTest {
                                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                 let resultSet = result.asResultSet!
-                                                                XCTAssertEqual(rows!.count, 8, "SELECT returned wrong number of rows: \(rows!.count) instead of 8")
+                                                                XCTAssertEqual(rows?.count, 8, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 8")
                                                                 XCTAssertEqual(resultSet.titles.count, 3, "SELECT returned wrong number of columns: \(resultSet.titles.count) instead of 3")
 
                                                                 let s5 = Select(from: t1)
@@ -156,7 +156,7 @@ class TestJoin: MySQLTest {
                                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                     let resultSet = result.asResultSet!
-                                                                    XCTAssertEqual(rows!.count, 4, "SELECT returned wrong number of rows: \(rows!.count) instead of 4")
+                                                                    XCTAssertEqual(rows?.count, 4, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 4")
                                                                     XCTAssertEqual(resultSet.titles.count, 3, "SELECT returned wrong number of columns: \(resultSet.titles.count) instead of 3")
                                                                 }
                                                             }
@@ -217,7 +217,7 @@ class TestJoin: MySQLTest {
                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                     let resultSet = result.asResultSet!
-                                                    XCTAssertEqual(rows!.count, 5, "SELECT returned wrong number of rows: \(rows!.count) instead of 5")
+                                                    XCTAssertEqual(rows?.count, 5, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 5")
                                                     XCTAssertEqual(resultSet.titles.count, 1, "SELECT returned wrong number of columns: \(resultSet.titles.count) instead of 1")
                                                 }
                                             }

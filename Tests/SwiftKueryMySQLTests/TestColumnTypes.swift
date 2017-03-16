@@ -116,8 +116,8 @@ class TestColumnTypes: MySQLTest {
                 XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
                 XCTAssertNotNil(rows, "SELECT returned no rows")
                 if let rows = rows {
-                    let rowCount = rows[0][0]!
-                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount * 2), "Incorrect number of rows inserted: \(rowCount) (type: \(type(of: rowCount)))")
+                    let rowCount = rows[0][0]
+                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount * 2), "Incorrect number of rows inserted: \(String(describing: rowCount)) (type: \(type(of: rowCount)))")
                 }
             }
 
@@ -146,9 +146,9 @@ class TestColumnTypes: MySQLTest {
                                     XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                 }
                             } else if inserted == nil {
-                                XCTAssertNil(selected, "value: \(selected) selected instead of inserted value: nil for column \(index)")
+                                XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
                             } else {
-                                XCTFail("nil value selected instead of inserted value: \(inserted) for column \(index)")
+                                XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
                             }
                         }
                     }

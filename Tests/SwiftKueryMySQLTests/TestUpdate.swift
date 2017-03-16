@@ -57,7 +57,7 @@ class TestUpdate: MySQLTest {
                             XCTAssertEqual(result.success, true, "SELECT failed")
                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                             XCTAssertNotNil(rows, "SELECT returned no rows")
-                            XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                            XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                             let u1 = Update(t, set: [(t.a, "peach"), (t.b, 2)])
                                 .where(t.a == "banana")
@@ -89,7 +89,7 @@ class TestUpdate: MySQLTest {
                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                 XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                XCTAssertEqual(rows!.count, 1, "SELECT returned wrong number of rows: \(rows!.count) instead of 1")
+                                                XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
 
                                                 let d2 = Delete(from: t)
                                                 executeQuery(query: d2, connection: connection) { result, rows in

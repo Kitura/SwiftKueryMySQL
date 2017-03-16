@@ -58,7 +58,7 @@ class TestSubquery: MySQLTest {
                             XCTAssertEqual(result.success, true, "SELECT failed")
                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                             XCTAssertNotNil(rows, "SELECT returned no rows")
-                            XCTAssertEqual(rows!.count, 2, "SELECT returned wrong number of rows: \(rows!.count) instead of 2")
+                            XCTAssertEqual(rows?.count, 2, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 2")
 
                             s = Select(t.a, from: t)
                                 .group(by: t.a)
@@ -67,7 +67,7 @@ class TestSubquery: MySQLTest {
                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                 XCTAssertNotNil(rows, "SELECT returned no rows")
-                                XCTAssertEqual(rows!.count, 1, "SELECT returned wrong number of rows: \(rows!.count) instead of 1")
+                                XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
 
                                 s = Select(from: t)
                                     .where(t.b > (Select(t.b, from: t).where(t.b == 3)))
@@ -75,7 +75,7 @@ class TestSubquery: MySQLTest {
                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                     XCTAssertNotNil(rows, "SELECT returned no rows")
-                                    XCTAssertEqual(rows!.count, 4, "SELECT returned wrong number of rows: \(rows!.count) instead of 4")
+                                    XCTAssertEqual(rows?.count, 4, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 4")
 
                                     s = Select(from: t)
                                         .where(exists(Select(t.b, from: t).where(t.b == 10)))
@@ -83,7 +83,7 @@ class TestSubquery: MySQLTest {
                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                         XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                         XCTAssertNotNil(rows, "SELECT returned no rows")
-                                        XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                        XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                         s = Select(from: t)
                                             .where(8.in(1,6,8))
@@ -91,7 +91,7 @@ class TestSubquery: MySQLTest {
                                             XCTAssertEqual(result.success, true, "SELECT failed")
                                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                             XCTAssertNotNil(rows, "SELECT returned no rows")
-                                            XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                            XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                             s = Select(from: t)
                                                 .having("apple".notIn("plum"))
@@ -100,7 +100,7 @@ class TestSubquery: MySQLTest {
                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                 XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                                XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                                 s = Select(from: t)
                                                     .where((-7).in(Select(t.b, from: t).where(t.b == -1)))
@@ -115,7 +115,7 @@ class TestSubquery: MySQLTest {
                                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                                         XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                         XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                        XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                                        XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                                         s = Select(from: t)
                                                             .where(notExists(Select(t.b, from: t).where(t.b == 8)))
@@ -123,7 +123,7 @@ class TestSubquery: MySQLTest {
                                                             XCTAssertEqual(result.success, true, "SELECT failed")
                                                             XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                             XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                            XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                                            XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                                             s = Select(from: t)
                                                                 .group(by: t.a, t.b)
@@ -132,7 +132,7 @@ class TestSubquery: MySQLTest {
                                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                 XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                                XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                                                XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
                                                                 s = Select(from: t)
                                                                     .where(false.notIn(Parameter(), Parameter()))
@@ -140,7 +140,7 @@ class TestSubquery: MySQLTest {
                                                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                                                     XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                                                                     XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                                    XCTAssertEqual(rows!.count, 6, "SELECT returned wrong number of rows: \(rows!.count) instead of 6")
+                                                                    XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
                                                                 }
                                                             }
                                                         }

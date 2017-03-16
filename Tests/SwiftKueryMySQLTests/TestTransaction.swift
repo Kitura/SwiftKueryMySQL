@@ -72,7 +72,7 @@ class TestTransaction: MySQLTest {
                                     executeQuery(query: s, connection: connection) { result, rows in
                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                         XCTAssertNotNil(rows, "SELECT returned no rows")
-                                        XCTAssertEqual(rows!.count, 4, "SELECT returned wrong number of rows: \(rows!.count) instead of 4")
+                                        XCTAssertEqual(rows?.count, 4, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 4")
                                     }
                                 }
                             }
@@ -172,7 +172,7 @@ class TestTransaction: MySQLTest {
                                                     executeQuery(query: s, connection: connection) { result, rows in
                                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                                         XCTAssertNotNil(rows, "SELECT returned no rows")
-                                                        XCTAssertEqual(rows!.count, 2, "SELECT returned wrong number of rows: \(rows!.count) instead of 2")
+                                                        XCTAssertEqual(rows?.count, 2, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 2")
 
                                                         connection.rollback(to: "spcreate") { result in
                                                             XCTAssertEqual(result.success, true, "Failed to rollback transaction")
