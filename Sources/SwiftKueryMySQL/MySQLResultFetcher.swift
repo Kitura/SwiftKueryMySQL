@@ -98,7 +98,7 @@ public class MySQLResultFetcher: ResultFetcher {
             }
         }
 
-        return QueryError.databaseError(getError(statement))
+        return QueryError.databaseError(MySQLConnection.getError(statement))
     }
 
     private func close() {
@@ -203,7 +203,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("ERROR: while fetching row: \(MySQLResultFetcher.getError(statement))")
+            print("ERROR: while fetching row: \(MySQLConnection.getError(statement))")
             return nil
         }
 
@@ -269,9 +269,5 @@ public class MySQLResultFetcher: ResultFetcher {
 
     private func pad(_ uInt: UInt32) -> String {
         return String(format: "%02u", uInt)
-    }
-
-    private static func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
-        return String(cString: mysql_stmt_error(statement))
     }
 }

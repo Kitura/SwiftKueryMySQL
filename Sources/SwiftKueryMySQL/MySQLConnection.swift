@@ -40,8 +40,12 @@ public class MySQLConnection: Connection {
     private let clientFlag: UInt
     private let characterSet: String
 
-    private var connection: UnsafeMutablePointer<MYSQL>?
+    private var mysql: UnsafeMutablePointer<MYSQL>?
     private var inTransaction = false
+
+    public var isConnected: Bool {
+        return self.mysql != nil
+    }
 
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
@@ -61,7 +65,7 @@ public class MySQLConnection: Connection {
     /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
     /// - Parameter clientFlag: MySQL client options
     /// - Parameter characterSet: MySQL character set to use for the connection
-    public init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil) {
+    public required init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil) {
 
         MySQLConnection.initOnce
 
@@ -85,33 +89,73 @@ public class MySQLConnection: Connection {
 
     deinit {
         closeConnection()
-        mysql_thread_end()
+    }
+
+    /// Create a MySQL connection pool.
+    ///
+    /// - Parameter host: host name or IP address of server to connect to, defaults to localhost
+    /// - Parameter user: MySQL login ID, defaults to current user
+    /// - Parameter password: password for `user`, defaults to no password
+    /// - Parameter database: default database to use if specified
+    /// - Parameter port: port number for the TCP/IP connection if using a non-standard port
+    /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
+    /// - Parameter clientFlag: MySQL client options
+    /// - Parameter characterSet: MySQL character set to use for the connection
+    /// - Parameter poolOptions: A set of `ConnectionOptions` to pass to the MySQL server.
+    /// - Returns: `ConnectionPool` of `MySQLConnection`.
+    public static func createPool(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
+
+        let connectionGenerator: () -> Connection? = {
+            let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet)
+            connection.connect { _ in }
+            return connection.mysql != nil ? connection : nil
+        }
+
+        let connectionReleaser: (_ connection: Connection) -> () = { connection in
+            connection.closeConnection()
+        }
+
+        return ConnectionPool(options: poolOptions, connectionGenerator: connectionGenerator, connectionReleaser: connectionReleaser)
+    }
+
+    /// Create a MySQL connection pool.
+    ///
+    /// - Parameter url: A URL with the connection information. For example, mysql://user:password@host:port/database
+    /// - Parameter poolOptions: A set of `ConnectionOptions` to pass to the MySQL server.
+    /// - Returns: `ConnectionPool` of `MySQLConnection`.
+    public static func createPool(url: URL, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
+        return createPool(host: url.host, user: url.user, password: url.password, database: url.lastPathComponent, port: url.port, poolOptions: poolOptions)
     }
 
     /// Establish a connection with the database.
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
-        if connection == nil {
-            connection = mysql_init(nil)
-        }
+        let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
 
-        if mysql_real_connect(connection, host, user, password, database, port, unixSocket, clientFlag) != nil {
-            if mysql_set_character_set(connection, characterSet) != 0 {
-                let defaultCharSet = String(cString: mysql_character_set_name(connection))
+        if mysql_real_connect(mysql, host, user, password, database, port, unixSocket, clientFlag) != nil
+            || mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
+
+            if mysql_set_character_set(mysql, characterSet) != 0 {
+                let defaultCharSet = String(cString: mysql_character_set_name(mysql))
                 print("WARNING: Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
             }
+
+            self.mysql = mysql
             onCompletion(nil) // success
         } else {
-            onCompletion(QueryError.connection(getError()))
+            self.mysql = nil
+            onCompletion(QueryError.connection(MySQLConnection.getError(mysql)))
+            mysql_thread_end() // should be called for each mysql_init() call
         }
     }
 
     /// Close the connection to the database.
     public func closeConnection() {
-        if connection != nil {
-            mysql_close(connection)
-            connection = nil
+        if let mysql = self.mysql {
+            self.mysql = nil
+            mysql_close(mysql)
+            mysql_thread_end() // should be called for each mysql_init() call
         }
     }
 
@@ -250,7 +294,7 @@ public class MySQLConnection: Connection {
 
     func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
 
-        guard let connection = connection else {
+        guard let mysql = self.mysql else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
             return
         }
@@ -261,13 +305,13 @@ public class MySQLConnection: Connection {
             return
         }
 
-        if mysql_query(connection, command) == 0 {
+        if mysql_query(mysql, command) == 0 {
             if changeTransactionState {
                 self.inTransaction = !self.inTransaction
             }
             onCompletion(.successNoData)
         } else {
-            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError())")))
+            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(MySQLConnection.getError(mysql))")))
         }
     }
 
@@ -283,32 +327,32 @@ public class MySQLConnection: Connection {
         return nil
     }
 
-    private func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
-        return String(cString: mysql_stmt_error(statement))
+    static func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
+        return "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
     }
 
-    private func getError() -> String {
-        return String(cString: mysql_error(connection))
+    static func getError(_ connection: UnsafeMutablePointer<MYSQL>) -> String {
+        return "ERROR \(mysql_errno(connection)): " + String(cString: mysql_error(connection))
     }
 
     private func handleError(_ statement: UnsafeMutablePointer<MYSQL_STMT>, onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.databaseError(getError(statement))))
+        onCompletion(.error(QueryError.databaseError(MySQLConnection.getError(statement))))
         mysql_stmt_close(statement)
     }
 
     func executeQuery(query: String, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
-        guard let connection = connection else {
+        guard let mysql = self.mysql else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
             return
         }
 
-        guard let statement = mysql_stmt_init(connection) else {
-            onCompletion(.error(QueryError.connection(getError())))
+        guard let statement = mysql_stmt_init(mysql) else {
+            onCompletion(.error(QueryError.connection(MySQLConnection.getError(mysql))))
             return
         }
 
         guard mysql_stmt_prepare(statement, query, UInt(query.utf8.count)) == 0 else {
-            onCompletion(.error(QueryError.syntaxError(getError(statement))))
+            onCompletion(.error(QueryError.syntaxError(MySQLConnection.getError(statement))))
             mysql_stmt_close(statement)
             return
         }
@@ -404,7 +448,7 @@ public class MySQLConnection: Connection {
         }
 
         guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
-            throw QueryError.databaseError(getError(statement))
+            throw QueryError.databaseError(MySQLConnection.getError(statement))
         }
     }
 

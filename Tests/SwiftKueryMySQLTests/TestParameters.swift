@@ -16,6 +16,7 @@
 
 import XCTest
 import SwiftKuery
+import SwiftKueryMySQL
 
 #if os(Linux)
 let tableParameters = "tableParametersLinux"
@@ -41,7 +42,7 @@ class TestParameters: MySQLTest {
     }
 
     func testParameters() {
-        performTest(characterSet: "latin2", asyncTasks: { connection in
+        performTest(usePool: false, characterSet: "latin2", asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -106,7 +107,7 @@ class TestParameters: MySQLTest {
     }
 
     func testMultipleParameterSets() {
-        performTest(asyncTasks: { connection in
+        performTest(usePool: false, asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -120,7 +121,7 @@ class TestParameters: MySQLTest {
 
             let i1 = "insert into " + t.tableName + " values(?, ?)"
             let parametersArray = [["apple", 10], ["apricot", 3], ["banana", -8]]
-            executeRawQueryWithParameters(i1, connection: connection, parametersArray: parametersArray) { result, rows in
+            executeRawQueryWithParameters(i1, connection: connection as! MySQLConnection, parametersArray: parametersArray) { result, rows in
                 XCTAssertEqual(result.success, true, "INSERT failed")
                 XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
             }

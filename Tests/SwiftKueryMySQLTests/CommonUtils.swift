@@ -18,7 +18,7 @@ import XCTest
 import SwiftKuery
 import SwiftKueryMySQL
 
-func executeQuery(query: Query, connection: MySQLConnection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeQuery(query: Query, connection: Connection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
         try print("=======\(connection.descriptionOf(query: query))=======")
     }
@@ -29,7 +29,7 @@ func executeQuery(query: Query, connection: MySQLConnection, callback: @escaping
     }
 }
 
-func executeQueryWithParameters(query: Query, connection: MySQLConnection, parameters: [Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeQueryWithParameters(query: Query, connection: Connection, parameters: [Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
         try print("=======\(connection.descriptionOf(query: query))=======")
     }
@@ -40,7 +40,7 @@ func executeQueryWithParameters(query: Query, connection: MySQLConnection, param
     }
 }
 
-func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, parameters: [Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeRawQueryWithParameters(_ raw: String, connection: Connection, parameters: [Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     print("=======\(raw)=======")
     connection.execute(raw, parameters: parameters) { result in
         let rows = printResultAndGetRowsAsArray(result)
@@ -67,7 +67,7 @@ func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, p
     }
 }
 
-func executeQueryWithParameters(query: Query, connection: MySQLConnection, parameters: [String:Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeQueryWithParameters(query: Query, connection: Connection, parameters: [String:Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
         try print("=======\(connection.descriptionOf(query: query))=======")
     }
@@ -78,7 +78,7 @@ func executeQueryWithParameters(query: Query, connection: MySQLConnection, param
     }
 }
 
-func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, parameters: [String:Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeRawQueryWithParameters(_ raw: String, connection: Connection, parameters: [String:Any?], callback: @escaping (QueryResult, [[Any?]]?)->()) {
     print("=======\(raw)=======")
     connection.execute(raw, parameters: parameters) { result in
         let rows = printResultAndGetRowsAsArray(result)
@@ -86,7 +86,7 @@ func executeRawQueryWithParameters(_ raw: String, connection: MySQLConnection, p
     }
 }
 
-func executeRawQuery(_ raw: String, connection: MySQLConnection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
+func executeRawQuery(_ raw: String, connection: Connection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
     print("=======\(raw)=======")
     connection.execute(raw) { result in
         let rows = printResultAndGetRowsAsArray(result)
@@ -94,7 +94,7 @@ func executeRawQuery(_ raw: String, connection: MySQLConnection, callback: @esca
     }
 }
 
-func cleanUp(table: String, connection: MySQLConnection, callback: @escaping (QueryResult)->()) {
+func cleanUp(table: String, connection: Connection, callback: @escaping (QueryResult)->()) {
     connection.execute("DROP TABLE " + table) { result in
         callback(result)
     }

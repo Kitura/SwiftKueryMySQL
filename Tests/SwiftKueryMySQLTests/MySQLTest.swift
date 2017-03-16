@@ -22,9 +22,28 @@ import SwiftKuery
 import SwiftKueryMySQL
 
 class MySQLTest: XCTestCase {
-    func performTest(characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (MySQLConnection) -> Void...) {
-        guard let connection = createConnection(taskCount: asyncTasks.count, characterSet: characterSet) else {
-            return
+    private static var threadSafePool: ConnectionPool?
+    private static var threadUnsafePool: ConnectionPool?
+
+    func performTest(usePool: Bool = true, characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
+
+        var connection: Connection
+        if usePool {
+            guard let pool = getConnectionOrPool(usePool: usePool, taskCount: asyncTasks.count, characterSet: characterSet).pool else {
+                XCTFail("Failed to get connection pool")
+                return
+            }
+
+            guard let conn = pool.getConnection() else {
+                XCTFail("Failed to get connection")
+                return
+            }
+            connection = conn
+        } else {
+            guard let conn = getConnectionOrPool(usePool: usePool, taskCount: asyncTasks.count, characterSet: characterSet).connection else {
+                return
+            }
+            connection = conn
         }
 
         defer {
@@ -63,7 +82,14 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func createConnection(taskCount: Int, characterSet: String?) -> MySQLConnection? {
+    private func getConnectionOrPool(usePool: Bool, taskCount: Int, characterSet: String?) -> (connection: Connection?, pool: ConnectionPool?) {
+        if usePool {
+            if let pool = (taskCount > 1 ? MySQLTest.threadSafePool : MySQLTest.threadUnsafePool) {
+                return (nil, pool)
+            }
+        }
+
+        let pool: ConnectionPool?
         do {
             let connectionFile = #file.replacingOccurrences(of: "MySQLTest.swift", with: "connection.json")
             let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
@@ -86,11 +112,21 @@ class MySQLTest: XCTestCase {
                     randomBinary = arc4random_uniform(2)
                 #endif
 
+                let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1, timeout: 10000)
+
                 if characterSet != nil || randomBinary == 0 {
-                    if taskCount > 1 {
-                        return MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet)
+                    if usePool {
+                        if taskCount > 1 {
+                            pool = MySQLThreadSafeConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
+                        } else {
+                            pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
+                        }
                     } else {
-                        return MySQLConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet)
+                        if taskCount > 1 {
+                            return (MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet), nil)
+                        } else {
+                            return (MySQLConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet), nil)
+                        }
                     }
                 } else {
                     var urlString = "mysql://"
@@ -106,21 +142,39 @@ class MySQLTest: XCTestCase {
                     }
 
                     if let url = URL(string: urlString) {
-                        if taskCount > 1 {
-                            return MySQLThreadSafeConnection(url: url)
+                        if usePool {
+                            if taskCount > 1 {
+                                pool = MySQLThreadSafeConnection.createPool(url: url, poolOptions: poolOptions)
+                            } else {
+                                pool = MySQLConnection.createPool(url: url, poolOptions: poolOptions)
+                            }
                         } else {
-                            return MySQLConnection(url: url)
+                            if taskCount > 1 {
+                                return (MySQLThreadSafeConnection(url: url), nil)
+                            } else {
+                                return (MySQLConnection(url: url), nil)
+                            }
                         }
+                    } else {
+                        pool = nil
+                        XCTFail("Invalid URL format: \(urlString)")
                     }
-                    XCTFail("Invalid URL format: \(urlString)")
                 }
             } else {
+                pool = nil
                 XCTFail("Invalid format for connection.json contents: \(json)")
             }
         } catch {
+            pool = nil
             XCTFail(error.localizedDescription)
         }
 
-        return nil
+        if taskCount > 1 {
+            MySQLTest.threadSafePool = pool
+        } else {
+            MySQLTest.threadUnsafePool = pool
+        }
+
+        return (nil, pool)
     }
 }

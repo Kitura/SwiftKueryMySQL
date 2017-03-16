@@ -17,6 +17,7 @@
 import XCTest
 import Foundation
 import SwiftKuery
+import SwiftKueryMySQL
 
 #if os(Linux)
     import CmySQLlinux
@@ -48,7 +49,7 @@ class TestColumnTypes: MySQLTest {
     }
 
     func testColumnTypes(batchParameters: Bool) {
-        performTest(timeout: 60, asyncTasks: { connection in
+        performTest(usePool: false, timeout: 60, asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -87,7 +88,7 @@ class TestColumnTypes: MySQLTest {
                     parametersArray[index * 2] = parameters1
                 }
 
-                connection.execute(rawInsert, parametersArray: parametersArray) { result in
+                (connection as! MySQLConnection).execute(rawInsert, parametersArray: parametersArray) { result in
                     error = result.asError
                 }
             } else {
@@ -193,7 +194,7 @@ class TestColumnTypes: MySQLTest {
     }
 
     func testBlobs() {
-        performTest(asyncTasks: { connection in
+        performTest(usePool: false, asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -211,7 +212,7 @@ class TestColumnTypes: MySQLTest {
 
             let parametersArray = [[0, insertedBlobs[0]], [1, [UInt8](insertedBlobs[1])], [2, insertedBlobs[2]], [3, insertedBlobs[3]]]
 
-            executeRawQueryWithParameters(rawInsert, connection: connection, parametersArray: parametersArray) { result, rows in
+            executeRawQueryWithParameters(rawInsert, connection: connection as! MySQLConnection, parametersArray: parametersArray) { result, rows in
                 XCTAssertEqual(result.success, true, "INSERT failed")
                 XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
             }
