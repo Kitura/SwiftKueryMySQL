@@ -65,11 +65,8 @@
 
 <p>MySQL plugin for Swift-Kuery framework</p>
 
-<!-- 
-[![Build Status - Master](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL.svg?branch=master)](https://travis-ci.org/IBM-Swift/SwiftKueryMySQL)
--->
-
-<p><img src="https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat" alt="macOS">
+<p><a href="https://travis-ci.org/IBM-Swift/SwiftKueryMySQL"><img src="https://travis-ci.org/IBM-Swift/SwiftKueryMySQL.svg?branch=master" alt="Build Status - Master"></a>
+<img src="https://img.shields.io/badge/os-Mac%20OS%20X-green.svg?style=flat" alt="macOS">
 <img src="https://img.shields.io/badge/os-linux-green.svg?style=flat" alt="Linux">
 <img src="https://img.shields.io/badge/license-Apache2-blue.svg?style=flat" alt="Apache 2"></p>
 <a href='#summary' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='summary'>Summary</h2>
@@ -132,29 +129,32 @@ let connection = MySQLConnection(password: password)
 <p>Alternatively, call:
 <code>swift
 let connection = MySQLConnection(url: URL(string: &quot;mysql://\(user):\(password)@\(host):\(port)/\(database)&quot;)!))
+</code>
+You now have a connection that can be used to execute SQL queries created using Swift-Kuery.</p>
+
+<p>If you want to share a connection instance between multiple threads use <code>MySQLThreadSafeConnection</code> instead of <code>MySQLConnection</code>:
+<code>swift
+let connection = MySQLThreadSafeConnection(host: host, user: user, password: password, database: database, 
+                                 port: port, characterSet: characterSet)
+</code>
+A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads sharing the same connection.</p>
+
+<p>To connect to the server and execute a query:
+<code>swift
+connection.connect() { error in
+   // if error is nil, connect() was successful
+   let query = Select(from: table)
+   connection.execute(query: query) { queryResult in
+      if let resultSet = queryResult.asResultSet {
+         for row in resultSet.rows {
+            // process each row
+         }
+      }
+   }
+}
 </code></p>
 
-<p>To establish a connection and execute queries:</p>
-<pre class="highlight swift"><code><span class="n">connection</span><span class="o">.</span><span class="nf">connect</span><span class="p">()</span> <span class="p">{</span> <span class="n">error</span> <span class="k">in</span>
-   <span class="c1">// if error is nil, connect() was successful</span>
-   <span class="k">let</span> <span class="nv">query</span> <span class="o">=</span> <span class="kt">Select</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">table</span><span class="p">)</span>
-   <span class="n">connection</span><span class="o">.</span><span class="nf">execute</span><span class="p">(</span><span class="nv">query</span><span class="p">:</span> <span class="n">query</span><span class="p">)</span> <span class="p">{</span> <span class="n">queryResult</span> <span class="k">in</span>
-      <span class="k">if</span> <span class="k">let</span> <span class="nv">resultSet</span> <span class="o">=</span> <span class="n">queryResult</span><span class="o">.</span><span class="n">asResultSet</span> <span class="p">{</span>
-         <span class="k">for</span> <span class="n">row</span> <span class="k">in</span> <span class="n">resultSet</span><span class="o">.</span><span class="n">rows</span> <span class="p">{</span>
-            <span class="c1">// process each row</span>
-         <span class="p">}</span>
-      <span class="p">}</span>
-   <span class="p">}</span>
-<span class="p">}</span>
-</code></pre>
-
-<p>You now have a connection that can be used to execute SQL queries created using Swift-Kuery. View the <a href="https://github.com/IBM-Swift/Swift-Kuery">Kuery</a> documentation for more information.</p>
-
-<p>If you want to share a connection instance between multiple threads use <code>MySQLThreadSafeConnection</code> instead of <code>MySQLConnection</code>
-<code>swift
-let threadSafeConnection = MySQLThreadSafeConnection(password: password)
-</code>
-A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads with the same connection.</p>
+<p>View the <a href="https://github.com/IBM-Swift/Swift-Kuery">Kuery</a> documentation for detailed information on using the Kuery framework.</p>
 <a href='#license' class='anchor' aria-hidden=true><span class="header-anchor"></span></a><h2 id='license'>License</h2>
 
 <p>This library is licensed under Apache 2.0. Full license text is available in <a href="LICENSE.txt">LICENSE</a>.</p>
@@ -166,7 +166,7 @@ A MySQLThreadSafeConnection instance can be used to safely execute queries on mu
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-03-06)</p>
+      <p>&copy; 2017 <a class="link" href="" target="_blank" rel="external">IBM</a>. All rights reserved. (Last updated: 2017-03-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.7.3</a>, a <a class="link" href="http://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
