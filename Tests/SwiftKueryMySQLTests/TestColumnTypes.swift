@@ -165,7 +165,7 @@ class TestColumnTypes: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (idCol int, randomCol varchar(100))", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  t.tableName + " (idCol int, randomCol varchar(500))", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
