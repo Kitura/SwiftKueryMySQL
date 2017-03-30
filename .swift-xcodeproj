@@ -1,1 +1,1 @@
-swift package generate-xcodeproj -Xlinker -L/usr/local/lib
+swift package -Xlinker -L/usr/local/lib generate-xcodeproj 
