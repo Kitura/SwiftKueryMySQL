@@ -50,8 +50,9 @@ public class MySQLConnection: Connection {
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
         let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true)
-        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH"])
-        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter : "`"])
+        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH",
+                                         QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter : "`",
+                                         QueryBuilder.QuerySubstitutionNames.namedParameter : ""])
         return queryBuilder
     }()
 
@@ -225,16 +226,6 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parametersArray: [[Any?]], onCompletion: @escaping ((QueryResult) -> ())) {
         executeQuery(query: raw, parametersArray: parametersArray, onCompletion: onCompletion)
-    }
-
-    /// NOT supported in MySQL
-    /// Execute a query with named parameters.
-    ///
-    /// - Parameter query: The query to execute.
-    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(query: Query, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters are not supported in MySQL")))
     }
 
     /// NOT supported in MySQL
