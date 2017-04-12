@@ -28,11 +28,11 @@ swift package generate-xcodeproj -Xlinker -L/usr/local/lib
 
 #### Linux
 Download the release package for your Linux distribution from http://dev.mysql.com/downloads/repo/apt/
-For example: `wget https://repo.mysql.com//mysql-apt-config_0.8.2-1_all.deb`
+For example: `wget https://repo.mysql.com//mysql-apt-config_0.8.4-1_all.deb`
 ```
-sudo dpkg -i mysql-apt-config_0.8.2-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.4-1_all.deb
 sudo apt-get update
-sudo apt-get install mysql-server
+sudo apt-get install mysql-server libmysqlclient-dev
 sudo service mysql start
 ```
 More details: https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html

@@ -106,7 +106,7 @@ class TestSubquery: MySQLTest {
                                                     .where((-7).in(Select(t.b, from: t).where(t.b == -1)))
                                                 executeQuery(query: s, connection: connection) { result, rows in
                                                     XCTAssertEqual(result.success, true, "SELECT failed")
-                                                    XCTAssertNil(result.asResultSet, "SELECT should not return any rows")
+                                                    XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
 
                                                     s = Select(from: t)
                                                         .group(by: t.a, t.b)

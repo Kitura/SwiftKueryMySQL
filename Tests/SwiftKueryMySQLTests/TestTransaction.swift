@@ -113,7 +113,7 @@ class TestTransaction: MySQLTest {
                                     let s = Select(from: t)
                                     executeQuery(query: s, connection: connection) { result, rows in
                                         XCTAssertEqual(result.success, true, "SELECT failed")
-                                        XCTAssertNil(rows, "SELECT returned rows")
+                                        XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
                                     }
                                 }
                             }
@@ -181,7 +181,7 @@ class TestTransaction: MySQLTest {
                                                             let s = Select(from: t)
                                                             executeQuery(query: s, connection: connection) { result, rows in
                                                                 XCTAssertEqual(result.success, true, "SELECT failed")
-                                                                XCTAssertNil(rows, "SELECT returned rows")
+                                                                XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
 
                                                                 connection.release(savepoint: "spcreate") { result in
                                                                     XCTAssertEqual(result.success, true, "Failed to release savepoint")

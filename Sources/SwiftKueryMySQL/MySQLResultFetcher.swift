@@ -32,10 +32,9 @@ public class MySQLResultFetcher: ResultFetcher {
 
     private let fieldNames: [String]
 
-    private var row: [Any?]?
     private var hasMoreRows = true
 
-    init?(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
+    init(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
         guard let fields = mysql_fetch_fields(resultMetadata) else {
             throw MySQLResultFetcher.initError(statement)
         }
@@ -67,12 +66,6 @@ public class MySQLResultFetcher: ResultFetcher {
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
-
-        self.row = buildRow()
-        if self.row == nil {
-            close()
-            return nil
-        }
     }
 
     deinit {
@@ -121,11 +114,6 @@ public class MySQLResultFetcher: ResultFetcher {
     ///
     /// - Returns: An array of values of type Any? representing the next row from the query result.
     public func fetchNext() -> [Any?]? {
-        if let row = row { // row built in init
-            self.row = nil
-            return row
-        }
-
         guard hasMoreRows else {
             return nil
         }

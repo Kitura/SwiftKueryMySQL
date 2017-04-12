@@ -419,11 +419,8 @@ public class MySQLConnection: Connection {
         }
 
         do {
-            if let resultFetcher = try MySQLResultFetcher(statement: statement, resultMetadata: resultMetadata) {
-                onCompletion(.resultSet(ResultSet(resultFetcher)))
-            } else {
-                onCompletion(.successNoData)
-            }
+            let resultFetcher = try MySQLResultFetcher(statement: statement, resultMetadata: resultMetadata)
+            onCompletion(.resultSet(ResultSet(resultFetcher)))
         } catch {
             onCompletion(.error(error))
         }

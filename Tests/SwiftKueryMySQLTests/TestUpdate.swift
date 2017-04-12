@@ -76,7 +76,7 @@ class TestUpdate: MySQLTest {
                                         .where(t.a == "banana")
                                     executeQuery(query: s2, connection: connection) { result, rows in
                                         XCTAssertEqual(result.success, true, "SELECT failed")
-                                        XCTAssertNil(result.asResultSet, "SELECT should not return any rows")
+                                        XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
 
                                         let d1 = Delete(from: t)
                                             .where(t.b == "2")
@@ -98,7 +98,7 @@ class TestUpdate: MySQLTest {
 
                                                     executeQuery(query: s1, connection: connection) { result, rows in
                                                         XCTAssertEqual(result.success, true, "SELECT failed")
-                                                        XCTAssertNil(result.asResultSet, "SELECT should not return any rows")
+                                                        XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
                                                     }
                                                 }
                                             }
