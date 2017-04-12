@@ -23,7 +23,7 @@ For example,
 ```
 swift build -Xlinker -L/usr/local/lib
 swift test -Xlinker -L/usr/local/lib
-swift package generate-xcodeproj -Xlinker -L/usr/local/lib
+swift package -Xlinker -L/usr/local/lib generate-xcodeproj
 ```
 
 #### Linux
