@@ -12,6 +12,8 @@ MySQL plugin for Swift-Kuery framework
 ### Install MySQL
 
 #### macOS
+Please install **v5.7** or newer version of MySQL. SwiftKueryMySQL will not compile with older versions.
+
 ```
 brew install mysql
 mysql.server start
