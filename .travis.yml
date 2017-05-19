@@ -34,6 +34,7 @@ matrix:
       sudo: required
 
 before_install:
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then brew update && brew install mysql && mysql.server start; fi
   - mysql --version
   - mysql -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
   - mysql -e "CREATE DATABASE IF NOT EXISTS test;"
