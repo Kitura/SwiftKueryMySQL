@@ -9,6 +9,7 @@ else
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         mysql --version || { brew update && brew install mysql && mysql.server start && mysql --version; }
     else
+        export DEBIAN_FRONTEND="noninteractive"
         mysql --version || { apt-get update && apt-get install -y mysql-server && service mysql start && mysql --version; }
     fi
 
