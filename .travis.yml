@@ -11,6 +11,9 @@ branches:
     - master
     - /^issue.*$/
 
+services:
+  - mysql
+
 matrix:
   include:
     - os: linux
@@ -27,6 +30,9 @@ matrix:
 before_install:
   - git clone https://github.com/IBM-Swift/Package-Builder.git
   - test -n "$SWIFT_VERSION" && echo "$SWIFT_VERSION" > .swift-version || echo "SWIFT_VERSION not set, using $(cat .swift-version)"
+  - mysql -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+  - mysql -e "CREATE DATABASE IF NOT EXISTS test;"
+  - mysql -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 
 script:
   - ./Package-Builder/build-package.sh -projectDir $TRAVIS_BUILD_DIR
