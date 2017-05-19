@@ -10,6 +10,7 @@ MySQL plugin for Swift-Kuery framework
 [MySQL](https://dev.mysql.com/) plugin for the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.
 
 ### Install MySQL
+MySQL **v5.7** is recommended. SwiftKueryMySQL will also work with 5.5 and 5.6 but some of the unit tests which rely on new data types in 5.7 will fail.
 
 #### macOS
 ```
