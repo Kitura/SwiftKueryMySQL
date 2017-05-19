@@ -1,10 +1,1 @@
-brew install mysql
-mysql.server start
-
-mysql_upgrade -uroot || echo "No need to upgrade"
-
-mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
-mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
-mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
-
 swift build -Xlinker -L/usr/local/lib
