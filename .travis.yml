@@ -24,21 +24,13 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
-      services: docker
-      env: DOCKER_IMAGE=ubuntu:16.04 SWIFT_VERSION=3.0.2
+      env: SWIFT_VERSION=3.0.2
     - os: linux
       dist: trusty
       sudo: required
     - os: osx
       osx_image: xcode8.3
       sudo: required
-
-before_install:
-  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then brew update && brew install mysql && mysql.server start; fi
-  - mysql --version
-  - mysql -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
-  - mysql -e "CREATE DATABASE IF NOT EXISTS test;"
-  - mysql -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 
 script:
   - ./build.sh
