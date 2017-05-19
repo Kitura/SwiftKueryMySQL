@@ -25,7 +25,6 @@ import Foundation
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
-    // private let encoding: String.Encoding?
     private var statement: UnsafeMutablePointer<MYSQL_STMT>
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
     private let binds: [MYSQL_BIND]
@@ -224,9 +223,8 @@ public class MySQLResultFetcher: ResultFetcher {
                 row.append(buffer.load(as: Double.self))
             case MYSQL_TYPE_NEWDECIMAL,
                  MYSQL_TYPE_STRING,
-                 MYSQL_TYPE_VAR_STRING,
-                 MYSQL_TYPE_JSON:
-                row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: String.Encoding.utf8, freeWhenDone: false))
+                 MYSQL_TYPE_VAR_STRING:
+                row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: .utf8, freeWhenDone: false))
             case MYSQL_TYPE_TINY_BLOB,
                  MYSQL_TYPE_BLOB,
                  MYSQL_TYPE_MEDIUM_BLOB,
@@ -244,7 +242,8 @@ public class MySQLResultFetcher: ResultFetcher {
                 let time = buffer.load(as: MYSQL_TIME.self)
                 row.append("\(time.year)-\(pad(time.month))-\(pad(time.day)) \(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")
             default:
-                row.append("Unhandled enum_field_type: \(type.rawValue)")
+                print("Using string for unhandled enum_field_type: \(type.rawValue)")
+                row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: .utf8, freeWhenDone: false))
             }
         }
 
