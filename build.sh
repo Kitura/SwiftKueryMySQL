@@ -7,10 +7,10 @@ if [ -n "${DOCKER_IMAGE}" ]; then
     docker run --env SWIFT_VERSION -v ${TRAVIS_BUILD_DIR}:${TRAVIS_BUILD_DIR} ${DOCKER_IMAGE} /bin/bash -c "apt-get update && apt-get install -y git sudo lsb-release wget libxml2 && cd $TRAVIS_BUILD_DIR && ./build.sh"
 else
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-        mysql --version || { brew update && brew install mysql libmysqlclient-dev && mysql.server start && mysql --version; }
+        mysql --version || { brew update && brew install mysql && mysql.server start && mysql --version; }
     else
         export DEBIAN_FRONTEND="noninteractive"
-        mysql --version || { apt-get update && apt-get install -y mysql-server && service mysql start && mysql --version; }
+        mysql --version || { apt-get update && apt-get install -y mysql-server libmysqlclient-dev && service mysql start && mysql --version; }
     fi
 
     mysql_upgrade -uroot || echo "No need to upgrade"
