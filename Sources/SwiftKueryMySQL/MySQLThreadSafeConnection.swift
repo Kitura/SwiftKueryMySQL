@@ -47,9 +47,9 @@ public class MySQLThreadSafeConnection: MySQLConnection {
         }
     }
 
-    override func executeQuery(query: String, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    override func executeQuery(_ mysqlQuery: MySQLQuery, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         threadSafe {
-            super.executeQuery(query: query, parametersArray: parametersArray, onCompletion: onCompletion)
+            super.executeQuery(mysqlQuery, parametersArray: parametersArray, onCompletion: onCompletion)
         }
     }
 

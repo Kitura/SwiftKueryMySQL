@@ -31,6 +31,11 @@ public class MySQLConnection: Connection {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
 
+    static let dateFormatter = getDateFormatter("yyyy-MM-dd")
+    static let timeFormatter = getDateFormatter("HH:mm:ss")
+    static let dateTimeFormatter = getDateFormatter("yyyy-MM-dd HH:mm:ss")
+    static let queryBuilderDateFormatter = getDateFormatter("''yyyy-MM-dd HH:mm:ss''")
+
     private let host: String
     private let user: String
     private let password: String
@@ -49,12 +54,24 @@ public class MySQLConnection: Connection {
 
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
-        let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true)
-        queryBuilder.updateSubstitutions([QueryBuilder.QuerySubstitutionNames.len : "LENGTH",
-                                         QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter : "`",
-                                         QueryBuilder.QuerySubstitutionNames.namedParameter : ""])
+        let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true,
+                                        dateFormatter: MySQLConnection.queryBuilderDateFormatter, plugin: .mysql)
+
+        queryBuilder.updateSubstitutions([
+            QueryBuilder.QuerySubstitutionNames.len: "LENGTH",
+            QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter: "`",
+            QueryBuilder.QuerySubstitutionNames.namedParameter: "",
+            QueryBuilder.QuerySubstitutionNames.float: "float"
+            ])
+
         return queryBuilder
     }()
+
+    private static func getDateFormatter(_ dateFormat: String) -> DateFormatter {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = dateFormat
+        return dateFormatter
+    }
 
     /// Initialize an instance of MySQLConnection.
     ///
@@ -174,9 +191,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: The query to execute.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
-        if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, onCompletion: onCompletion)
-        }
+        executeQuery(MySQLQuery.query(query), onCompletion: onCompletion)
     }
 
     /// Execute a query with parameters.
@@ -185,9 +200,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parametersArray: [parameters], onCompletion: onCompletion)
-        }
+        executeQuery(MySQLQuery.query(query), parametersArray: [parameters], onCompletion: onCompletion)
     }
 
     /// Execute a query multiple times with multiple parameter sets.
@@ -196,9 +209,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: Multiple sets of parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parametersArray: [[Any?]], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let query = build(query: query, onCompletion: onCompletion) {
-            executeQuery(query: query, parametersArray: parametersArray, onCompletion: onCompletion)
-        }
+        executeQuery(MySQLQuery.query(query), parametersArray: parametersArray, onCompletion: onCompletion)
     }
 
     /// Execute a raw query.
@@ -206,7 +217,7 @@ public class MySQLConnection: Connection {
     /// - Parameter query: A String with the query to execute.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, onCompletion: onCompletion)
+        executeQuery(MySQLQuery.raw(raw), onCompletion: onCompletion)
     }
 
     /// Execute a raw query with parameters.
@@ -215,7 +226,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parametersArray: [parameters], onCompletion: onCompletion)
+        executeQuery(MySQLQuery.raw(raw), parametersArray: [parameters], onCompletion: onCompletion)
     }
 
 
@@ -225,7 +236,7 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: Multiple sets of parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parametersArray: [[Any?]], onCompletion: @escaping ((QueryResult) -> ())) {
-        executeQuery(query: raw, parametersArray: parametersArray, onCompletion: onCompletion)
+        executeQuery(MySQLQuery.raw(raw), parametersArray: parametersArray, onCompletion: onCompletion)
     }
 
     /// NOT supported in MySQL
@@ -306,18 +317,6 @@ public class MySQLConnection: Connection {
         }
     }
 
-    private func build(query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> String? {
-        do {
-            return try query.build(queryBuilder: queryBuilder)
-        } catch QueryError.syntaxError(let error) {
-            onCompletion(.error(QueryError.syntaxError(error)))
-        } catch {
-            onCompletion(.error(QueryError.syntaxError("Failed to build the query")))
-        }
-
-        return nil
-    }
-
     static func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
         return "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
     }
@@ -331,7 +330,32 @@ public class MySQLConnection: Connection {
         mysql_stmt_close(statement)
     }
 
-    func executeQuery(query: String, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    enum MySQLQuery {
+        case query(Query)
+        case raw(String)
+    }
+
+    func executeQuery(_ mysqlQuery: MySQLQuery, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+        let query: Query?
+        let raw: String
+
+        switch mysqlQuery {
+        case .query(let swiftQuery):
+            query = swiftQuery
+            do {
+                raw = try swiftQuery.build(queryBuilder: queryBuilder)
+            } catch QueryError.syntaxError(let error) {
+                onCompletion(.error(QueryError.syntaxError(error)))
+                return
+            } catch {
+                onCompletion(.error(QueryError.syntaxError("Failed to build the query")))
+                return
+            }
+        case .raw(let rawQuery):
+            query = nil
+            raw = rawQuery
+        }
+
         guard let mysql = self.mysql else {
             onCompletion(.error(QueryError.connection("Not connected, call connect() before execute()")))
             return
@@ -342,7 +366,7 @@ public class MySQLConnection: Connection {
             return
         }
 
-        guard mysql_stmt_prepare(statement, query, UInt(query.utf8.count)) == 0 else {
+        guard mysql_stmt_prepare(statement, raw, UInt(raw.utf8.count)) == 0 else {
             onCompletion(.error(QueryError.syntaxError(MySQLConnection.getError(statement))))
             mysql_stmt_close(statement)
             return
@@ -361,7 +385,7 @@ public class MySQLConnection: Connection {
             bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: capacity)
 
             do {
-                try allocateBinds(statement: statement, parameters: parametersArray[0], binds: &binds, bindPtr: &bindPtr!)
+                try allocateBinds(statement: statement, parameters: parametersArray[0], binds: &binds, bindPtr: &bindPtr!, query: query)
             } catch {
                 mysql_stmt_close(statement)
                 onCompletion(.error(error))
@@ -386,7 +410,7 @@ public class MySQLConnection: Connection {
             if let parametersArray = parametersArray, parametersArray.count > 1 {
                 for i in 1 ..< parametersArray.count {
                     do {
-                        try allocateBinds(statement: statement, parameters: parametersArray[i], binds: &binds, bindPtr: &bindPtr!)
+                        try allocateBinds(statement: statement, parameters: parametersArray[i], binds: &binds, bindPtr: &bindPtr!, query: query)
                     } catch {
                         onCompletion(.error(error))
                         return
@@ -417,19 +441,36 @@ public class MySQLConnection: Connection {
         }
     }
 
-    private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>) throws {
+    private func allocateBinds(statement: UnsafeMutablePointer<MYSQL_STMT>, parameters: [Any?], binds: inout [MYSQL_BIND], bindPtr: inout UnsafeMutablePointer<MYSQL_BIND>, query: Query?) throws {
+
+        var cols: [Column]?
+        switch query {
+        case let insert as Insert:
+            cols = insert.columns ?? insert.table.columns
+        case let update as Update:
+            cols = update.table.columns
+        default:
+            break
+        }
+
+        let columns: [Column]?
+        if cols?.count == parameters.count {
+            columns = cols
+        } else {
+            columns = nil
+        }
 
         if binds.isEmpty { // first parameter set, create new bind and bind it to the parameter
             for (index, parameter) in parameters.enumerated() {
                 var bind = MYSQL_BIND()
-                setBind(&bind, parameter)
+                setBind(&bind, parameter, columns?[index])
                 binds.append(bind)
                 bindPtr[index] = bind
             }
         } else { // bind was previously created, re-initialize value
             for (index, parameter) in parameters.enumerated() {
                 var bind = binds[index]
-                setBind(&bind, parameter)
+                setBind(&bind, parameter, columns?[index])
                 binds[index] = bind
                 bindPtr[index] = bind
             }
@@ -461,7 +502,7 @@ public class MySQLConnection: Connection {
         binds.removeAll()
     }
 
-    private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?) {
+    private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?, _ column: Column?) {
         if bind.is_null == nil {
             bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
         }
@@ -479,6 +520,18 @@ public class MySQLConnection: Connection {
         switch parameter {
         case let string as String:
             initialize(string: string, &bind)
+        case let date as Date:
+            let formatter: DateFormatter
+            switch column?.type {
+            case is SQLDate.Type:
+                formatter = MySQLConnection.dateFormatter
+            case is Time.Type:
+                formatter = MySQLConnection.timeFormatter
+            default:
+                formatter = MySQLConnection.dateTimeFormatter
+            }
+            let formattedDate = formatter.string(from: date)
+            initialize(string: formattedDate, &bind)
         case let byteArray as [UInt8]:
             let typedBuffer = allocate(type: UInt8.self, capacity: byteArray.count, bind: &bind)
             #if swift(>=3.1)
@@ -573,7 +626,8 @@ public class MySQLConnection: Connection {
 
     private func getType(parameter: Any) -> enum_field_types {
         switch parameter {
-        case is String:
+        case is String,
+             is Date:
             return MYSQL_TYPE_STRING
         case is Data,
              is [UInt8]:
