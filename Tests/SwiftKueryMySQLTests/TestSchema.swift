@@ -61,25 +61,22 @@ class TestSchema: MySQLTest {
 
             cleanUp(table: t.tableName, connection: connection) { _ in }
             cleanUp(table: tNew.tableName, connection: connection) { _ in }
-            defer {
-                cleanUp(table: t.tableName, connection: connection) { _ in }
-                cleanUp(table: tNew.tableName, connection: connection) { _ in }
-            }
 
             t.create(connection: connection) { result in
-                XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+                if let error = result.asError {
+                    XCTFail("Error in CREATE TABLE: \(error)")
+                    return
+                }
             }
 
             let i1 = Insert(into: t, columns: [t.a, t.b], values: ["apple", 5])
             executeQuery(query: i1, connection: connection) { result, rows in
-                XCTAssertEqual(result.success, true, "INSERT failed")
-                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+                XCTAssertNil(result.asError, "Error in INSERT")
             }
 
             let s1 = Select(from: t)
             executeQuery(query: s1, connection: connection) { result, rows in
-                XCTAssertEqual(result.success, true, "SELECT failed")
+                XCTAssertNil(result.asError, "Error in SELECT")
                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                 XCTAssertNotNil(rows, "SELECT returned no rows")
 
@@ -101,36 +98,34 @@ class TestSchema: MySQLTest {
 
             var index = Index("idx_err", on: t, columns: [tNew.a, desc(t.b)])
             index.create(connection: connection) { result in
-                XCTAssertEqual(result.success, false, "CREATE INDEX should fail")
-                XCTAssertNotNil(result.asError, "CREATE INDEX should return an error")
-                XCTAssertEqual("\(result.asError!)", "Index contains columns that do not belong to its table.")
+                if let error = result.asError {
+                    XCTAssertEqual("\(error)", "Index contains columns that do not belong to its table.")
+                } else {
+                    XCTFail("CREATE INDEX should return an error")
+                }
             }
 
             index = Index("idx_ok", unique: true, on: t, columns: [t.a, desc(t.b)])
             index.create(connection: connection) { result in
-                XCTAssertEqual(result.success, true, "CREATE INDEX failed")
-                XCTAssertNil(result.asError, "Error in CREATE INDEX: \(result.asError!)")
+                XCTAssertNil(result.asError, "Error in CREATE INDEX")
             }
 
             index.drop(connection: connection) { result in
-                XCTAssertEqual(result.success, true, "DROP INDEX failed")
-                XCTAssertNil(result.asError, "Error in DROP INDEX: \(result.asError!)")
+                XCTAssertNil(result.asError, "Error in DROP INDEX")
             }
 
             let migration = Migration(from: t, to: tNew, using: connection)
             migration.alterTableName() { result in
-                XCTAssertEqual(result.success, true, "Migration failed")
-                XCTAssertNil(result.asError, "Error in Migration: \(result.asError!)")
+                XCTAssertNil(result.asError, "Error in Migration")
             }
 
             migration.alterTableAdd(column: tNew.d) { result in
-                XCTAssertEqual(result.success, true, "Migration failed")
-                XCTAssertNil(result.asError, "Error in Migration: \(result.asError!)")
+                XCTAssertNil(result.asError, "Error in Migration")
             }
 
             let s2 = Select(from: tNew)
             executeQuery(query: s2, connection: connection) { result, rows in
-                XCTAssertEqual(result.success, true, "SELECT failed")
+                XCTAssertNil(result.asError, "Error in SELECT")
                 XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
                 XCTAssertNotNil(rows, "SELECT returned no rows")
 
@@ -182,35 +177,36 @@ class TestSchema: MySQLTest {
 
 
     func testPrimaryKeys() {
-        let t1 = Table1()
-        let t2 = Table2()
-        let t3 = Table3()
-
         performTest(asyncTasks: { connection in
-            cleanUp(table: t1.tableName, connection: connection) { result in
-                cleanUp(table: t2.tableName, connection: connection) { result in
-                    cleanUp(table: t3.tableName, connection: connection) { result in
+            let t1 = Table1()
+            let t2 = Table2()
+            let t3 = Table3()
+            
+            cleanUp(table: t1.tableName, connection: connection) { _ in }
+            cleanUp(table: t2.tableName, connection: connection) { _ in }
+            cleanUp(table: t3.tableName, connection: connection) { _ in }
 
-                        t1.create(connection: connection) { result in
-                            XCTAssertEqual(result.success, false, "CREATE TABLE with conflicting primary keys didn't fail")
-                            XCTAssertEqual("\(result.asError!)", "Conflicting definitions of primary key. ", "Wrong error")
-
-                            t2.primaryKey(t2.c, t2.d).create(connection: connection) { result in
-                                XCTAssertEqual(result.success, false, "CREATE TABLE with conflicting primary keys didn't fail")
-                                XCTAssertEqual("\(result.asError!)", "Conflicting definitions of primary key. ", "Wrong error")
-
-                                t3.primaryKey(t3.c, t3.d).create(connection: connection) { result in
-                                    XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                                    XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
-                                }
-                            }
-                        }
-                    }
+            t1.create(connection: connection) { result in
+                if let error = result.asError {
+                    XCTAssertEqual("\(error)", "Conflicting definitions of primary key. ")
+                } else {
+                    XCTFail("CREATE TABLE with conflicting primary keys didn't fail")
                 }
+            }
+
+            t2.primaryKey(t2.c, t2.d).create(connection: connection) { result in
+                if let error = result.asError {
+                    XCTAssertEqual("\(error)", "Conflicting definitions of primary key. ")
+                } else {
+                    XCTFail("CREATE TABLE with conflicting primary keys didn't fail")
+                }
+            }
+
+            t3.primaryKey(t3.c, t3.d).create(connection: connection) { result in
+                XCTAssertNil(result.asError, "Error in CREATE TABLE with valid primary keys")
             }
         })
     }
-
 
     class Table4: Table {
         let a = Column("a", Varchar.self, length: 10)
@@ -228,36 +224,25 @@ class TestSchema: MySQLTest {
     }
 
     func testForeignKeys() {
-        let t4 = Table4()
-        let t5 = Table5()
-
         performTest(asyncTasks: { connection in
-            cleanUp(table: t5.tableName, connection: connection) { result in
-                cleanUp(table: t4.tableName, connection: connection) { result in
+            let t4 = Table4()
+            let t5 = Table5()
 
-                    t4.primaryKey(t4.a, t4.b).create(connection: connection) { result in
-                        XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                        XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            cleanUp(table: t5.tableName, connection: connection) { _ in }
+            cleanUp(table: t4.tableName, connection: connection) { _ in }
 
-                        t5.foreignKey([t5.e, t5.f], references: [t4.a, t4.b]).create(connection: connection) { result in
-                            XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                            XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
-
-                        }
-                    }
+            t4.primaryKey(t4.a, t4.b).create(connection: connection) { result in
+                if let error = result.asError {
+                    XCTFail("Error in CREATE TABLE: \(error)")
+                    return
                 }
             }
-        })
-    }
 
-    public struct TimestampWithTimezone: SQLDataType {
-        /// Return database specific description of the type using `QueryBuilder`.
-        ///
-        /// - Parameter queryBuilder: The QueryBuilder to use.
-        /// - Returns: A String representation of the type.
-        public static func create(queryBuilder: QueryBuilder) -> String {
-            return "timestamp with time zone"
-        }
+            t5.foreignKey([t5.e, t5.f], references: [t4.a, t4.b]).create(connection: connection) { result in
+                XCTAssertNil(result.asError, "Error in CREATE TABLE with foreign key")
+
+            }
+        })
     }
 
     class TypesTable: Table {
@@ -279,62 +264,66 @@ class TestSchema: MySQLTest {
         let tableName = "TypesTable" + tableNameSuffix
     }
 
-
     func testTypes() {
-        let t = TypesTable()
-
         performTest(asyncTasks: { connection in
-            cleanUp(table: t.tableName, connection: connection) { result in
+            let t = TypesTable()
+            cleanUp(table: t.tableName, connection: connection) { _ in }
 
-                t.create(connection: connection) { result in
-                    XCTAssertEqual(result.success, true, "CREATE TABLE failed")
-                    XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            t.create(connection: connection) { result in
+                if let error = result.asError {
+                    XCTFail("Error in CREATE TABLE: \(error)")
+                    return
+                }
+            }
 
-                    let date = Date()
-                    let i1 = Insert(into: t, values: "apple", "passion fruit", "peach", 123456789, 123456789, 123456789, -0.53, 123.4567, date, date, date)
-                    executeQuery(query: i1, connection: connection) { result, rows in
-                        XCTAssertEqual(result.success, false, "INSERT should fail")
-                        XCTAssertNotNil(result.asError, "No error in INSERT of too long value into varchar column.")
+            let date = Date()
+            let i1 = Insert(into: t, values: "apple", "passion fruit", "peach", 123456789, 123456789, 123456789, -0.53, 123.4567, date, date, date)
+            executeQuery(query: i1, connection: connection) { result, rows in
+                if let error = result.asError {
+                    XCTAssertEqual("\(error)", "ERROR 1406: Data too long for column 'b' at row 1")
+                } else {
+                    XCTFail("No error in INSERT of too long value into varchar column.")
+                }
+            }
 
-                        let i2 = Insert(into: t, values: "apple", "banana", "peach", 123456789, 123456789, 123456789, -0.53, 123.4567, date, date, date)
-                        executeQuery(query: i2, connection: connection) { result, rows in
-                            XCTAssertEqual(result.success, false, "INSERT should fail")
-                            XCTAssertNotNil(result.asError, "No error in INSERT of too long value into smallint column.")
+            let i2 = Insert(into: t, values: "apple", "banana", "peach", 123456789, 123456789, 123456789, -0.53, 123.4567, date, date, date)
+            executeQuery(query: i2, connection: connection) { result, rows in
+                if let error = result.asError {
+                    XCTAssertEqual("\(error)", "ERROR 1264: Out of range value for column 'd' at row 1")
+                } else {
+                    XCTFail("No error in INSERT of too long value into smallint column.")
+                }
+            }
 
-                            let i3 = Insert(into: t, values: "apple", "banana", "peach", 1234, 123456789, 123456789, -0.53, 123.4567, date, date, date)
-                            executeQuery(query: i3, connection: connection) { result, rows in
-                                XCTAssertEqual(result.success, true, "INSERT failed")
-                                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            let i3 = Insert(into: t, values: "apple", "banana", "peach", 1234, 123456789, 123456789, -0.53, 123.4567, date, date, date)
+            executeQuery(query: i3, connection: connection) { result, rows in
+                XCTAssertNil(result.asError, "Error in INSERT")
+            }
 
-                                let s1 = Select(from: t)
-                                executeQuery(query: s1, connection: connection) { result, rows in
-                                    XCTAssertEqual(result.success, true, "SELECT failed")
-                                    XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
-                                    XCTAssertNotNil(rows, "SELECT returned no rows")
+            let s1 = Select(from: t)
+            executeQuery(query: s1, connection: connection) { result, rows in
+                XCTAssertNil(result.asError, "Error in SELECT")
+                XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
+                XCTAssertNotNil(rows, "SELECT returned no rows")
 
-                                    XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows")
-                                    if let row = rows?.first {
-                                        XCTAssertEqual(row.count, 11, "SELECT returned wrong number of columns")
-                                        XCTAssertEqual(row[0] as? String, "apple", "Wrong value in row 0 column 0")
-                                        XCTAssertEqual(row[1] as? String, "banana", "Wrong value in row 0 column 1")
-                                        XCTAssertEqual(row[2] as? String, "peach", "Wrong value in row 0 column 2")
-                                        XCTAssertEqual(row[3] as? Int16, 1234, "Wrong value in row 0 column 3")
-                                        XCTAssertEqual(row[4] as? Int32, 123456789, "Wrong value in row 0 column 4")
-                                        XCTAssertEqual(row[5] as? Int64, 123456789, "Wrong value in row 0 column 5")
-                                        XCTAssertEqual(row[6] as? Float, -0.53, "Wrong value in row 0 column 6")
-                                        XCTAssertEqual(row[7] as? Double, 123.4567, "Wrong value in row 0 column 7")
-                                        XCTAssertEqual(row[8] as? String, MySQLConnection.dateFormatter.string(from: date), "Wrong value in row 0 column 7")
-                                        XCTAssertEqual(row[9] as? String, MySQLConnection.timeFormatter.string(from: date), "Wrong value in row 0 column 7")
+                XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows")
+                if let row = rows?.first {
+                    XCTAssertEqual(row.count, 11, "SELECT returned wrong number of columns")
+                    XCTAssertEqual(row[0] as? String, "apple", "Wrong value in row 0 column 0")
+                    XCTAssertEqual(row[1] as? String, "banana", "Wrong value in row 0 column 1")
+                    XCTAssertEqual(row[2] as? String, "peach", "Wrong value in row 0 column 2")
+                    XCTAssertEqual(row[3] as? Int16, 1234, "Wrong value in row 0 column 3")
+                    XCTAssertEqual(row[4] as? Int32, 123456789, "Wrong value in row 0 column 4")
+                    XCTAssertEqual(row[5] as? Int64, 123456789, "Wrong value in row 0 column 5")
+                    XCTAssertEqual(row[6] as? Float, -0.53, "Wrong value in row 0 column 6")
+                    XCTAssertEqual(row[7] as? Double, 123.4567, "Wrong value in row 0 column 7")
+                    XCTAssertEqual(row[8] as? String, MySQLConnection.dateFormatter.string(from: date), "Wrong value in row 0 column 8")
+                    XCTAssertEqual(row[9] as? String, MySQLConnection.timeFormatter.string(from: date), "Wrong value in row 0 column 9")
 
-                                        if let timestamp = row[10] as? Date {
-                                            XCTAssertEqual(Int(timestamp.timeIntervalSince1970), Int(date.timeIntervalSince1970), "Wrong value in row 0 column 10")
-                                        } else {
-                                            XCTFail("Cast to Date failed for '\(row[10] ?? "nil")' in row 0 column 10")
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    if let timestamp = row[10] as? Date {
+                        XCTAssertEqual(Int(timestamp.timeIntervalSince1970), Int(date.timeIntervalSince1970), "Wrong value in row 0 column 10")
+                    } else {
+                        XCTFail("Cast to Date failed for '\(row[10] ?? "nil")' in row 0 column 10")
                     }
                 }
             }

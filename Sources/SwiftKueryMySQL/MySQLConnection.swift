@@ -54,8 +54,10 @@ public class MySQLConnection: Connection {
 
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
-        let queryBuilder = QueryBuilder(addNumbersToParameters: false, anyOnSubquerySupported: true,
-                                        dateFormatter: MySQLConnection.queryBuilderDateFormatter, plugin: .mysql)
+        let queryBuilder = QueryBuilder(addNumbersToParameters: false,
+                                        anyOnSubquerySupported: true,
+                                        dropIndexRequiresOnTableName: true,
+                                        dateFormatter: MySQLConnection.queryBuilderDateFormatter)
 
         queryBuilder.updateSubstitutions([
             QueryBuilder.QuerySubstitutionNames.len: "LENGTH",
