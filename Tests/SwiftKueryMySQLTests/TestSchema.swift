@@ -276,6 +276,11 @@ class TestSchema: MySQLTest {
                 }
             }
 
+            // These tests require strict SQL mode
+            executeRawQuery("SET SESSION sql_mode = 'STRICT_TRANS_TABLES'", connection: connection) { result, rows in
+                XCTAssertNil(result.asError, "Error in SET SESSION sql_mode to STRICT_TRANS_TABLES")
+            }
+
             let date = Date()
             let i1 = Insert(into: t, values: "apple", "passion fruit", "peach", 123456789, 123456789, 123456789, -0.53, 123.4567, date, date, date)
             executeQuery(query: i1, connection: connection) { result, rows in
