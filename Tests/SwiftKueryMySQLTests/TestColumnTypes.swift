@@ -17,7 +17,8 @@
 import XCTest
 import Foundation
 import SwiftKuery
-import SwiftKueryMySQL
+
+@testable import SwiftKueryMySQL
 
 #if os(Linux)
     import CmySQLlinux
@@ -74,11 +75,11 @@ class TestColumnTypes: MySQLTest {
             var ts2 = ts1
             ts2.year = 2018
 
-            let parameters1: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-02-27", "13:51:52", "2017-02-27 13:51:52", ts1, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", nil, ""]
+            let parameters1: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-01-01", "13:51:52", "2017-02-27 15:51:52", ts1, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", nil, ""]
 
-            let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2017-03-06", "13:41:05", "2017-03-06 13:41:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", nil, "abc"]
+            let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2018-01-01", "13:41:05", "2018-02-27 15:51:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", nil, "abc"]
 
-            let parametersCount = 500
+            let parametersCount = 100
 
             var error: Error? = nil
             let start = Date.timeIntervalSinceReferenceDate
@@ -139,9 +140,12 @@ class TestColumnTypes: MySQLTest {
                                     XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
                                 } else if inserted is MYSQL_TIME {
                                     let time = inserted as! MYSQL_TIME
-                                    let selectedTime = selected as! String
+                                    let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
                                     let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
                                     XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
+                                } else if selected is Date {
+                                    let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
+                                    XCTAssertEqual(inserted as! String, selectedTime, "Column \(columnIndex+1) inserted Data (\(inserted)) is not equal to selected Data (\(selectedTime))")
                                 } else {
                                     XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                 }

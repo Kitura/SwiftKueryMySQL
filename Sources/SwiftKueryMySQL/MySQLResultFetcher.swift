@@ -240,7 +240,8 @@ public class MySQLResultFetcher: ResultFetcher {
             case MYSQL_TYPE_DATETIME,
                  MYSQL_TYPE_TIMESTAMP:
                 let time = buffer.load(as: MYSQL_TIME.self)
-                row.append("\(time.year)-\(pad(time.month))-\(pad(time.day)) \(pad(time.hour)):\(pad(time.minute)):\(pad(time.second))")
+                let formattedDate = "\(time.year)-\(time.month)-\(time.day) \(time.hour):\(time.minute):\(time.second)"
+                row.append(MySQLConnection.dateTimeFormatter.date(from: formattedDate))
             default:
                 print("Using string for unhandled enum_field_type: \(type.rawValue)")
                 row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: .utf8, freeWhenDone: false))
