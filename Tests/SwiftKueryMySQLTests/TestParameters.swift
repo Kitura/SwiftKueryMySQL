@@ -44,7 +44,7 @@ class TestParameters: MySQLTest {
     }
 
     func testParameters() {
-        performTest(usePool: false, characterSet: "latin2", asyncTasks: { connection in
+        performTest(characterSet: "latin2", asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -109,7 +109,7 @@ class TestParameters: MySQLTest {
     }
 
     func testMultipleParameterSets() {
-        performTest(usePool: false, asyncTasks: { connection in
+        performTest(asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -123,9 +123,24 @@ class TestParameters: MySQLTest {
 
             let i1 = "insert into " + t.tableName + " values(?, ?)"
             let parametersArray = [["apple", 10], ["apricot", 3], ["banana", -8]]
-            executeRawQueryWithParameters(i1, connection: connection as! MySQLConnection, parametersArray: parametersArray) { result, rows in
-                XCTAssertEqual(result.success, true, "INSERT failed")
-                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+            do {
+                var error: Error? = nil
+                let preparedStatement = try connection.prepareStatement(i1)
+                defer { connection.release(preparedStatement: preparedStatement) { _ in } }
+
+                for parameters in parametersArray {
+                    connection.execute(preparedStatement: preparedStatement, parameters: parameters) { result in
+                        error = result.asError
+                        XCTAssertEqual(result.success, true, "INSERT failed")
+                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+                    }
+                    if error != nil {
+                        break
+                    }
+                }
+            } catch {
+                XCTFail("Error in INSERT: \(error)")
             }
 
             let s1 = Select(from: t)
@@ -152,7 +167,7 @@ class TestParameters: MySQLTest {
     }
 
     func testNamedParameters() {
-        performTest(usePool: false, asyncTasks: { connection in
+        performTest(asyncTasks: { connection in
             let t = NamedParametersTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
