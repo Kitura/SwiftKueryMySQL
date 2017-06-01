@@ -47,9 +47,98 @@ public class MySQLThreadSafeConnection: MySQLConnection {
         }
     }
 
-    override func executeQuery(_ mysqlQuery: MySQLQuery, parametersArray: [[Any?]]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
+    /// Execute a query.
+    ///
+    /// - Parameter query: The query to execute.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    override public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         threadSafe {
-            super.executeQuery(mysqlQuery, parametersArray: parametersArray, onCompletion: onCompletion)
+            super.execute(query: query, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a query with parameters.
+    ///
+    /// - Parameter query: The query to execute.
+    /// - Parameter parameters: An array of the parameters.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    override public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
+        threadSafe {
+            super.execute(query: query, parameters: parameters, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a raw query.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    override public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        threadSafe {
+            super.execute(raw, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a raw query with parameters.
+    ///
+    /// - Parameter query: A String with the query to execute.
+    /// - Parameter parameters: An array of the parameters.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    override public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
+        threadSafe {
+            super.execute(raw, parameters: parameters, onCompletion: onCompletion)
+        }
+    }
+
+    /// Prepare statement.
+    ///
+    /// - Parameter query: The query to prepare statement for.
+    /// - Returns: The prepared statement.
+    /// - Throws: QueryError.syntaxError if query build fails, or a database error if it fails to prepare statement.
+    override public func prepareStatement(_ query: Query) throws -> PreparedStatement {
+        return try threadSafe {
+            try super.prepareStatement(query)
+        }
+    }
+
+    /// Prepare statement.
+    ///
+    /// - Parameter raw: A String with the query to prepare statement for.
+    /// - Returns: The prepared statement.
+    /// - Throws: QueryError.syntaxError if query build fails, or a database error if it fails to prepare statement.
+    override public func prepareStatement(_ raw: String) throws -> PreparedStatement  {
+        return try threadSafe {
+            try super.prepareStatement(raw)
+        }
+    }
+
+    /// Release a prepared statement.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to release.
+    /// - Parameter onCompletion: The function to be called when the execution has completed.
+    override public func release(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ())) {
+        threadSafe {
+            super.release(preparedStatement: preparedStatement, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a prepared statement.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to execute.
+    /// - Parameter onCompletion: The function to be called when the execution has completed.
+    override public func execute(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ()))  {
+        threadSafe {
+            super.execute(preparedStatement: preparedStatement, onCompletion: onCompletion)
+        }
+    }
+
+    /// Execute a prepared statement with parameters.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to execute.
+    /// - Parameter parameters: An array of the parameters.
+    /// - Parameter onCompletion: The function to be called when the execution has completed.
+    override public func execute(preparedStatement: PreparedStatement, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
+        threadSafe {
+            super.execute(preparedStatement: preparedStatement, parameters: parameters, onCompletion: onCompletion)
         }
     }
 

@@ -25,26 +25,19 @@ class MySQLTest: XCTestCase {
     private static var threadSafePool: ConnectionPool?
     private static var threadUnsafePool: ConnectionPool?
 
-    func performTest(usePool: Bool = true, characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
+    func performTest(characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
 
         var connection: Connection
-        if usePool {
-            guard let pool = getConnectionOrPool(usePool: usePool, taskCount: asyncTasks.count, characterSet: characterSet).pool else {
-                XCTFail("Failed to get connection pool")
-                return
-            }
-
-            guard let conn = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-            connection = conn
-        } else {
-            guard let conn = getConnectionOrPool(usePool: usePool, taskCount: asyncTasks.count, characterSet: characterSet).connection else {
-                return
-            }
-            connection = conn
+        guard let pool = getPool(taskCount: asyncTasks.count, characterSet: characterSet).pool else {
+            XCTFail("Failed to get connection pool")
+            return
         }
+
+        guard let conn = pool.getConnection() else {
+            XCTFail("Failed to get connection")
+            return
+        }
+        connection = conn
 
         defer {
             connection.closeConnection()
@@ -82,8 +75,8 @@ class MySQLTest: XCTestCase {
         }
     }
 
-    private func getConnectionOrPool(usePool: Bool, taskCount: Int, characterSet: String?) -> (connection: Connection?, pool: ConnectionPool?) {
-        if usePool {
+    private func getPool(taskCount: Int, characterSet: String?) -> (connection: Connection?, pool: ConnectionPool?) {
+        if characterSet == nil {
             if let pool = (taskCount > 1 ? MySQLTest.threadSafePool : MySQLTest.threadUnsafePool) {
                 return (nil, pool)
             }
@@ -115,18 +108,10 @@ class MySQLTest: XCTestCase {
                 let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1, timeout: 10000)
 
                 if characterSet != nil || randomBinary == 0 {
-                    if usePool {
-                        if taskCount > 1 {
-                            pool = MySQLThreadSafeConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
-                        } else {
-                            pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
-                        }
+                    if taskCount > 1 {
+                        pool = MySQLThreadSafeConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
                     } else {
-                        if taskCount > 1 {
-                            return (MySQLThreadSafeConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet), nil)
-                        } else {
-                            return (MySQLConnection(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet), nil)
-                        }
+                        pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
                     }
                 } else {
                     var urlString = "mysql://"
@@ -142,18 +127,10 @@ class MySQLTest: XCTestCase {
                     }
 
                     if let url = URL(string: urlString) {
-                        if usePool {
-                            if taskCount > 1 {
-                                pool = MySQLThreadSafeConnection.createPool(url: url, poolOptions: poolOptions)
-                            } else {
-                                pool = MySQLConnection.createPool(url: url, poolOptions: poolOptions)
-                            }
+                        if taskCount > 1 {
+                            pool = MySQLThreadSafeConnection.createPool(url: url, poolOptions: poolOptions)
                         } else {
-                            if taskCount > 1 {
-                                return (MySQLThreadSafeConnection(url: url), nil)
-                            } else {
-                                return (MySQLConnection(url: url), nil)
-                            }
+                            pool = MySQLConnection.createPool(url: url, poolOptions: poolOptions)
                         }
                     } else {
                         pool = nil

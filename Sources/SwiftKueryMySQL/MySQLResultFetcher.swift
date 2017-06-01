@@ -25,7 +25,7 @@ import Foundation
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
-    private var statement: UnsafeMutablePointer<MYSQL_STMT>
+    private var preparedStatement: MySQLPreparedStatement
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
     private let binds: [MYSQL_BIND]
 
@@ -33,9 +33,9 @@ public class MySQLResultFetcher: ResultFetcher {
 
     private var hasMoreRows = true
 
-    init(statement: UnsafeMutablePointer<MYSQL_STMT>, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
+    init(preparedStatement: MySQLPreparedStatement, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
         guard let fields = mysql_fetch_fields(resultMetadata) else {
-            throw MySQLResultFetcher.initError(statement)
+            throw MySQLResultFetcher.initError(preparedStatement)
         }
 
         let numFields = Int(mysql_num_fields(resultMetadata))
@@ -53,15 +53,15 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr[i] = binds[i]
         }
 
-        guard mysql_stmt_bind_result(statement, bindPtr) == 0 else {
-            throw MySQLResultFetcher.initError(statement, bindPtr: bindPtr, binds: binds)
+        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == 0 else {
+            throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
-        guard mysql_stmt_execute(statement) == 0 else {
-            throw MySQLResultFetcher.initError(statement, bindPtr: bindPtr, binds: binds)
+        guard mysql_stmt_execute(preparedStatement.statement) == 0 else {
+            throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
-        self.statement = statement
+        self.preparedStatement = preparedStatement
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
@@ -71,10 +71,10 @@ public class MySQLResultFetcher: ResultFetcher {
         close()
     }
 
-    private static func initError(_ statement: UnsafeMutablePointer<MYSQL_STMT>, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> QueryError {
+    private static func initError(_ preparedStatement: MySQLPreparedStatement, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> QueryError {
 
         defer {
-            mysql_stmt_close(statement)
+            preparedStatement.release()
         }
 
         if let binds = binds {
@@ -90,7 +90,7 @@ public class MySQLResultFetcher: ResultFetcher {
             }
         }
 
-        return QueryError.databaseError(MySQLConnection.getError(statement))
+        return QueryError.databaseError(MySQLConnection.getError(preparedStatement.statement!))
     }
 
     private func close() {
@@ -105,7 +105,7 @@ public class MySQLResultFetcher: ResultFetcher {
             }
             bindPtr.deallocate(capacity: binds.count)
 
-            mysql_stmt_close(statement)
+            preparedStatement.release()
         }
     }
 
@@ -183,14 +183,14 @@ public class MySQLResultFetcher: ResultFetcher {
     }
 
     private func buildRow() -> [Any?]? {
-        let fetchStatus = mysql_stmt_fetch(statement)
+        let fetchStatus = mysql_stmt_fetch(preparedStatement.statement)
         if fetchStatus == MYSQL_NO_DATA {
             return nil
         }
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("ERROR: while fetching row: \(MySQLConnection.getError(statement))")
+            print("ERROR: while fetching row: \(MySQLConnection.getError(preparedStatement.statement!))")
             return nil
         }
 

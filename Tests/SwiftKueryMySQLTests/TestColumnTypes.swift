@@ -50,7 +50,7 @@ class TestColumnTypes: MySQLTest {
     }
 
     func testColumnTypes(batchParameters: Bool) {
-        performTest(usePool: false, timeout: 60, asyncTasks: { connection in
+        performTest(timeout: 60, asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -84,13 +84,21 @@ class TestColumnTypes: MySQLTest {
             var error: Error? = nil
             let start = Date.timeIntervalSinceReferenceDate
             if batchParameters {
-                var parametersArray = Array(repeating: parameters2, count: parametersCount*2)
-                for index in 0 ..< parametersCount {
-                    parametersArray[index * 2] = parameters1
-                }
+                do {
+                    let preparedStatement = try connection.prepareStatement(rawInsert)
+                    defer { connection.release(preparedStatement: preparedStatement) { _ in } }
 
-                (connection as! MySQLConnection).execute(rawInsert, parametersArray: parametersArray) { result in
-                    error = result.asError
+                    for index in 0 ..< parametersCount*2 {
+                        let parameters = index % 2 == 0 ? parameters1 : parameters2
+                        connection.execute(preparedStatement: preparedStatement, parameters: parameters) { result in
+                            error = result.asError
+                        }
+                        if error != nil {
+                            break
+                        }
+                    }
+                } catch {
+                    XCTFail("Error in INSERT: \(error)")
                 }
             } else {
                 for index in 0 ..< parametersCount*2 {
@@ -181,24 +189,24 @@ class TestColumnTypes: MySQLTest {
             executeRawQueryWithParameters(rawInsert, connection: connection, parameters: [1, unhandledParameter]) { result, rows in
                 XCTAssertEqual(result.success, true, "INSERT failed")
                 XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            }
 
-                let rawSelect = "SELECT * from " + t.tableName
-                executeRawQuery(rawSelect, connection: connection) { result, rows in
-                    XCTAssertEqual(result.success, true, "SELECT failed")
-                    XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                    XCTAssertNotNil(rows, "SELECT returned no rows")
-                    if let rows = rows {
-                        let inserted = unhandledParameter
-                        let selected = rows[0][1]!
-                        XCTAssertEqual(String(describing: inserted), String(describing: selected), "SELECT failed")
-                    }
+            let rawSelect = "SELECT * from " + t.tableName
+            executeRawQuery(rawSelect, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "SELECT failed")
+                XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
+                XCTAssertNotNil(rows, "SELECT returned no rows")
+                if let rows = rows {
+                    let inserted = unhandledParameter
+                    let selected = rows[0][1]!
+                    XCTAssertEqual(String(describing: inserted), String(describing: selected), "SELECT failed")
                 }
             }
         })
     }
 
     func testBlobs() {
-        performTest(usePool: false, asyncTasks: { connection in
+        performTest(asyncTasks: { connection in
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
             defer {
@@ -216,9 +224,23 @@ class TestColumnTypes: MySQLTest {
 
             let parametersArray = [[0, insertedBlobs[0]], [1, [UInt8](insertedBlobs[1])], [2, insertedBlobs[2]], [3, insertedBlobs[3]]]
 
-            executeRawQueryWithParameters(rawInsert, connection: connection as! MySQLConnection, parametersArray: parametersArray) { result, rows in
-                XCTAssertEqual(result.success, true, "INSERT failed")
-                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+            do {
+                var error: Error? = nil
+                let preparedStatement = try connection.prepareStatement(rawInsert)
+                defer { connection.release(preparedStatement: preparedStatement) { _ in } }
+
+                for parameters in parametersArray {
+                    connection.execute(preparedStatement: preparedStatement, parameters: parameters) { result in
+                        error = result.asError
+                        XCTAssertEqual(result.success, true, "INSERT failed")
+                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+                    }
+                    if error != nil {
+                        break
+                    }
+                }
+            } catch {
+                XCTFail("Error in INSERT: \(error)")
             }
 
             let rawSelect = "SELECT * from " + t.tableName + " order by idCol"
