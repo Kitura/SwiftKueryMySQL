@@ -44,12 +44,13 @@ public class MySQLConnection: Connection {
     private let unixSocket: String?
     private let clientFlag: UInt
     private let characterSet: String
+    private let reconnect: Bool
 
     private var mysql: UnsafeMutablePointer<MYSQL>?
     private var inTransaction = false
 
     public var isConnected: Bool {
-        return self.mysql != nil
+        return mysql != nil && mysql_ping(mysql) == 0
     }
 
     /// The `QueryBuilder` with MySQL specific substitutions.
@@ -85,7 +86,7 @@ public class MySQLConnection: Connection {
     /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
     /// - Parameter clientFlag: MySQL client options
     /// - Parameter characterSet: MySQL character set to use for the connection
-    public required init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil) {
+    public required init(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, reconnect: Bool = true) {
 
         MySQLConnection.initOnce
 
@@ -97,6 +98,7 @@ public class MySQLConnection: Connection {
         self.unixSocket = unixSocket
         self.clientFlag = clientFlag
         self.characterSet = characterSet ?? "utf8"
+        self.reconnect = reconnect
     }
 
     /// Initialize an instance of MySQLConnection.
@@ -121,12 +123,13 @@ public class MySQLConnection: Connection {
     /// - Parameter unixSocket: unix domain socket or named pipe to use for connecting to server instead of TCP/IP
     /// - Parameter clientFlag: MySQL client options
     /// - Parameter characterSet: MySQL character set to use for the connection
+    /// - Parameter reconnect: Enable or disable automatic reconnection to the server if the connection is found to have been lost
     /// - Parameter poolOptions: A set of `ConnectionOptions` to pass to the MySQL server.
     /// - Returns: `ConnectionPool` of `MySQLConnection`.
-    public static func createPool(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
+    public static func createPool(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, reconnect: Bool = true, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
 
         let connectionGenerator: () -> Connection? = {
-            let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet)
+            let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet, reconnect: reconnect)
             connection.connect { _ in }
             return connection.mysql != nil ? connection : nil
         }
@@ -152,6 +155,13 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
         let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
+
+        var reconnect: Int8 = self.reconnect ? 1 : 0
+        withUnsafePointer(to: &reconnect) { ptr in
+            if mysql_options(mysql, MYSQL_OPT_RECONNECT, ptr) != 0 {
+                print("WARNING: Error setting MYSQL_OPT_RECONNECT")
+            }
+        }
 
         if mysql_real_connect(mysql, host, user, password, database, port, unixSocket, clientFlag) != nil
             || mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
