@@ -25,7 +25,7 @@ class MySQLTest: XCTestCase {
     private static var threadSafePool: ConnectionPool?
     private static var threadUnsafePool: ConnectionPool?
 
-    func performTest(characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: @escaping (Connection) -> Void...) {
+    func performTest(characterSet: String? = nil, timeout: TimeInterval = 10, line: Int = #line, asyncTasks: (Connection) -> Void...) {
 
         var connection: Connection
         guard let pool = getPool(taskCount: asyncTasks.count, characterSet: characterSet).pool else {
