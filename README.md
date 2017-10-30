@@ -47,6 +47,16 @@ swift test
 swift package generate-xcodeproj
 ```
 
+#### MySQL Test Setup
+
+To run swift test you must first set up your MySQL with the following commands:
+```
+mysql_upgrade -uroot || echo "No need to upgrade"
+mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
+```
+
 ## Using Swift-Kuery-MySQL
 
 First create an instance of `MySQLConnection` by calling:
