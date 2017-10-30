@@ -1,3 +1,6 @@
+// swift-tools-version:4.0
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 /**
  * Copyright IBM Corporation 2017
  *
@@ -18,8 +21,28 @@ import PackageDescription
 
 let package = Package(
     name: "SwiftKueryMySQL",
+    products: [
+        // Products define the executables and libraries produced by a package, and make them visible to other packages.
+        .library(
+            name: "SwiftKueryMySQL",
+            targets: ["SwiftKueryMySQL"]
+        )
+    ],
     dependencies: [
-        .Package(url: "https://github.com/IBM-Swift/CMySQL.git", majorVersion: 0, minor: 1),
-        .Package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", majorVersion: 0, minor: 13),
+        .package(url: "https://github.com/IBM-Swift/CMySQL.git", .upToNextMinor(from: "0.1.0")),
+        .package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", .upToNextMinor(from: "0.13.0"))
+    ],
+    targets: [
+        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
+        // Targets can depend on other targets in this package, and on products in packages which this package depends on.
+        .target(
+            name: "SwiftKueryMySQL",
+            dependencies: ["SwiftKuery", "CMySQL"]
+        ),
+        .testTarget(
+            name: "SwiftKueryMySQLTests",
+            dependencies: ["SwiftKueryMySQL"]
+        )
     ]
 )
+
