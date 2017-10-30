@@ -10,7 +10,6 @@ branches:
   only:
     - master
     - /^issue.*$/
-    - /^issue_*$/
 
 services:
   - mysql
@@ -31,4 +30,8 @@ before_install:
    - git clone https://github.com/IBM-Swift/Package-Builder.git
 
 script:
-   - ./Package-Builder/build-package.sh -projectDir $TRAVIS_BUILD_DIR
+  - mysql_upgrade -uroot || echo "No need to upgrade"
+  - mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+  - mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+  - mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
+  - ./Package-Builder/build-package.sh -projectDir $TRAVIS_BUILD_DIR
