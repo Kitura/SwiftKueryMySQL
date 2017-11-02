@@ -2,6 +2,7 @@
 
 set -o verbose
 
+
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
     mysql --version || { brew update && brew install mysql && mysql.server start && mysql --version; }
 else
@@ -16,3 +17,4 @@ mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 
 git clone https://github.com/IBM-Swift/Package-Builder.git
 ./Package-Builder/build-package.sh -projectDir $(pwd)
+
