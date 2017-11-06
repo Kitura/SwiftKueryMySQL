@@ -219,11 +219,7 @@ public class MySQLPreparedStatement: PreparedStatement {
             initialize(string: formattedDate, &bind)
         case let byteArray as [UInt8]:
             let typedBuffer = allocate(type: UInt8.self, capacity: byteArray.count, bind: &bind)
-            #if swift(>=3.1)
-                let _ = UnsafeMutableBufferPointer(start: typedBuffer, count: byteArray.count).initialize(from: byteArray)
-            #else
                 typedBuffer.initialize(from: byteArray)
-            #endif
         case let data as Data:
             let typedBuffer = allocate(type: UInt8.self, capacity: data.count, bind: &bind)
             data.copyBytes(to: typedBuffer, count: data.count)
@@ -302,11 +298,7 @@ public class MySQLPreparedStatement: PreparedStatement {
     private func initialize(string: String, _ bind: inout MYSQL_BIND) {
         let utf8 = string.utf8
         let typedBuffer = allocate(type: UInt8.self, capacity: utf8.count, bind: &bind)
-        #if swift(>=3.1)
-            let _ = UnsafeMutableBufferPointer(start: typedBuffer, count: utf8.count).initialize(from: utf8)
-        #else
             typedBuffer.initialize(from: utf8)
-        #endif
     }
 
     private func getType(parameter: Any) -> enum_field_types {

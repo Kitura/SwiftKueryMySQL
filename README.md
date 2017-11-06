@@ -9,6 +9,9 @@ MySQL plugin for Swift-Kuery framework
 ## Summary
 [MySQL](https://dev.mysql.com/) plugin for the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.
 
+## Swift version
+The latest version of SwiftKueryMySQL requires **Swift 4.0**. You can download this version of the Swift binaries by following this [link](https://swift.org/download/). Compatibility with other Swift versions is not guaranteed.
+
 ### Install MySQL
 
 #### macOS
@@ -42,6 +45,16 @@ On linux, regular swift commands should work fine:
 swift build
 swift test
 swift package generate-xcodeproj
+```
+
+#### MySQL Test Setup
+
+To run swift test you must first set up your MySQL with the following commands:
+```
+mysql_upgrade -uroot || echo "No need to upgrade"
+mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 ```
 
 ## Using Swift-Kuery-MySQL
