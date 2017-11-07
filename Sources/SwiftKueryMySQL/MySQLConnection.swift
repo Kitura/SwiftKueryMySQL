@@ -47,7 +47,7 @@ public class MySQLConnection: Connection {
     private let reconnect: Bool
     
     /// Connection timeout in seconds
-    private let timeout: UInt = 0
+    private var timeout: UInt = 0
 
     private var mysql: UnsafeMutablePointer<MYSQL>?
     private var inTransaction = false
