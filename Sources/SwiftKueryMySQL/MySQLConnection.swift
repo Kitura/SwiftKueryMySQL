@@ -46,7 +46,7 @@ public class MySQLConnection: Connection {
     private let characterSet: String
     private let reconnect: Bool
     
-    /// Connection timeout in seconds
+    /// Connection timeout in milliseconds
     private var timeout: UInt = 0
 
     private var mysql: UnsafeMutablePointer<MYSQL>?
@@ -167,7 +167,8 @@ public class MySQLConnection: Connection {
             }
         }
         
-        withUnsafePointer(to: &self.timeout) { ptr in
+        var timeoutSec = self.timeout / 1000 //Convert to seconds used in MySQL
+        withUnsafePointer(to: &timeoutSec) { ptr in
             if mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, ptr) != 0 {
                 print("WARNING: Error setting MYSQL_OPT_CONNECT_TIMEOUT")
             }
@@ -194,7 +195,7 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter to: Timeout value in milliseconds
     public func setTimeout(to timeout: UInt) {
-        self.timeout = timeout / 1000
+        self.timeout = timeout
     }
 
     /// Close the connection to the database.
