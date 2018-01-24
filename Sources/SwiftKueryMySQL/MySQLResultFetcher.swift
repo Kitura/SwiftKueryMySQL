@@ -30,6 +30,7 @@ public class MySQLResultFetcher: ResultFetcher {
     private let binds: [MYSQL_BIND]
 
     private let fieldNames: [String]
+    private let charsetnr: [UInt32]
 
     private var hasMoreRows = true
 
@@ -41,11 +42,13 @@ public class MySQLResultFetcher: ResultFetcher {
         let numFields = Int(mysql_num_fields(resultMetadata))
         var binds = [MYSQL_BIND]()
         var fieldNames = [String]()
+        var charsetnr = [UInt32]()
 
         for i in 0 ..< numFields {
             let field = fields[i]
             binds.append(MySQLResultFetcher.getOutputBind(field))
             fieldNames.append(String(cString: field.name))
+            charsetnr.append(field.charsetnr)
         }
 
         let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
@@ -65,6 +68,7 @@ public class MySQLResultFetcher: ResultFetcher {
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
+        self.charsetnr = charsetnr
     }
 
     deinit {
@@ -195,7 +199,7 @@ public class MySQLResultFetcher: ResultFetcher {
         }
 
         var row = [Any?]()
-        for bind in binds {
+        for (index, bind) in binds.enumerated() {
             guard let buffer = bind.buffer else {
                 row.append("bind buffer not set")
                 continue
@@ -228,8 +232,17 @@ public class MySQLResultFetcher: ResultFetcher {
             case MYSQL_TYPE_TINY_BLOB,
                  MYSQL_TYPE_BLOB,
                  MYSQL_TYPE_MEDIUM_BLOB,
-                 MYSQL_TYPE_LONG_BLOB,
-                 MYSQL_TYPE_BIT:
+                 MYSQL_TYPE_LONG_BLOB:
+                if charsetnr[index] == 63 {
+                  // Value 63 is used to denote binary data
+                  // see https://dev.mysql.com/doc/refman/5.7/en/c-api-prepared-statement-type-conversions.html
+                  row.append(Data(bytes: buffer, count: getLength(bind)))
+                } else { 
+                  // We are assuming that the returned data
+                  // is encoded in UTF-8
+                  row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: .utf8, freeWhenDone: false))
+                }
+            case MYSQL_TYPE_BIT:
                 row.append(Data(bytes: buffer, count: getLength(bind)))
             case MYSQL_TYPE_TIME:
                 let time = buffer.load(as: MYSQL_TIME.self)
@@ -247,7 +260,6 @@ public class MySQLResultFetcher: ResultFetcher {
                 row.append(String(bytesNoCopy: buffer, length: getLength(bind), encoding: .utf8, freeWhenDone: false))
             }
         }
-
         return row
     }
 

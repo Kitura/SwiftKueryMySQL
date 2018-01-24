@@ -57,12 +57,12 @@ class TestColumnTypes: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (tinyintCol tinyint, smallintCol smallint, unsignedmediumintCol mediumint, intCol int, bigintCol bigint, floatCol float, doubleCol double, dateCol date, timeCol time, datetimeCol datetime, mySqlTimeCol timestamp, blobCol blob, enumCol enum('enum1', 'enum2', 'enum3'), setCol set('smallSet', 'mediumSet', 'largeSet'), nulCol int, emptyCol varchar(10))", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  t.tableName + " (tinyintCol tinyint, smallintCol smallint, unsignedmediumintCol mediumint, intCol int, bigintCol bigint, floatCol float, doubleCol double, dateCol date, timeCol time, datetimeCol datetime, mySqlTimeCol timestamp, blobCol blob, enumCol enum('enum1', 'enum2', 'enum3'), setCol set('smallSet', 'mediumSet', 'largeSet'), nulCol int, emptyCol varchar(10), text text)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            let rawInsert = "INSERT INTO " + t.tableName + " (tinyintCol, smallintCol, unsignedmediumintCol, intCol, bigintCol, floatCol, doubleCol, dateCol, timeCol, datetimeCol, mySqlTimeCol, blobCol, enumCol, setCol, nulCol, emptyCol) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            let rawInsert = "INSERT INTO " + t.tableName + " (tinyintCol, smallintCol, unsignedmediumintCol, intCol, bigintCol, floatCol, doubleCol, dateCol, timeCol, datetimeCol, mySqlTimeCol, blobCol, enumCol, setCol, nulCol, emptyCol, text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)"
 
             var ts1 = MYSQL_TIME()
             ts1.year = 2017
@@ -75,9 +75,9 @@ class TestColumnTypes: MySQLTest {
             var ts2 = ts1
             ts2.year = 2018
 
-            let parameters1: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-01-01", "13:51:52", "2017-02-27 15:51:52", ts1, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", nil, ""]
+            let parameters1: [Any?] = [Int8.max, Int16.max, UInt16.max, Int32.max, Int64.max, Float.greatestFiniteMagnitude, Double.greatestFiniteMagnitude, "2017-01-01", "13:51:52", "2017-02-27 15:51:52", ts1, Data(repeating: 0x84, count: 96), "enum2", "mediumSet", nil, "", ""]
 
-            let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2018-01-01", "13:41:05", "2018-02-27 15:51:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", nil, "abc"]
+            let parameters2: [Any?] = [Int8.min, Int16.min, UInt16.min, Int32.min, Int64.min, Float.leastNonzeroMagnitude, Double.leastNonzeroMagnitude, "2018-01-01", "13:41:05", "2018-02-27 15:51:05", ts2, Data(repeating: 0x72, count: 75), "enum1", "largeSet", nil, "abc", "test"]
 
             let parametersCount = 100
 
