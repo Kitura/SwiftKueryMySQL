@@ -21,9 +21,11 @@ import SwiftKuery
 #if os(Linux)
 let tableInsert = "tableInsertLinux"
 let tableInsert2 = "tableInsert2Linux"
+let tableInsert3 = "tableInsert3Linux"
 #else
 let tableInsert = "tableInsertOSX"
 let tableInsert2 = "tableInsert2OSX"
+let tableInsert3 = "tableInsert3OSX"
 #endif
 
 class TestInsert: MySQLTest {
@@ -31,6 +33,7 @@ class TestInsert: MySQLTest {
     static var allTests: [(String, (TestInsert) -> () throws -> Void)] {
         return [
             ("testInsert", testInsert),
+            ("testInsertID", testInsertID)
         ]
     }
 
@@ -46,6 +49,13 @@ class TestInsert: MySQLTest {
         let b = Column("b")
 
         let tableName = tableInsert2
+    }
+
+    class MyTable3 : Table {
+        let a = Column("a", autoIncrement: true, primaryKey: true)
+        let b = Column("b")
+
+        let tableName = tableInsert3
     }
 
     func testInsert() {
@@ -114,6 +124,34 @@ class TestInsert: MySQLTest {
                         XCTAssertEqual(result.success, true, "DROP TABLE failed")
                         XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
                     }
+                }
+            }
+        })
+    }
+
+    func testInsertID(){
+        performTest(asyncTasks: { connection in
+            let t3 = MyTable3()
+            defer {
+                cleanUp(table: t3.tableName, connection: connection) { _ in }
+            }
+
+            executeRawQuery("CREATE TABLE " +  t3.tableName + " (a integer NOT NULL AUTO_INCREMENT , b integer, PRIMARY KEY (a))", connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+            }
+
+            let i = Insert(into: t3, valueTuples: [(t3.b, 5)], returnID: true)
+            executeQuery(query: i, connection: connection) { result, rows in
+                XCTAssertEqual(result.success, true, "INSERT failed")
+                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+                XCTAssertNotNil(rows, "INSERT returned no rows")
+                XCTAssertEqual(rows?.count, 1, "INSERT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
+
+                let drop = Raw(query: "DROP TABLE", table: t3)
+                executeQuery(query: drop, connection: connection) { result, rows in
+                    XCTAssertEqual(result.success, true, "DROP TABLE failed")
+                    XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
                 }
             }
         })

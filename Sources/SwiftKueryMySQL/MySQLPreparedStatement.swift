@@ -31,6 +31,7 @@ public class MySQLPreparedStatement: PreparedStatement {
     private var binds = [MYSQL_BIND]()
     private var bindsCapacity = 0
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
+    private var mysql: UnsafeMutablePointer<MYSQL>?
 
     init(_ raw: String, query: Query? = nil, mysql: UnsafeMutablePointer<MYSQL>?) throws {
         guard let mysql = mysql else {
@@ -48,6 +49,7 @@ public class MySQLPreparedStatement: PreparedStatement {
             throw QueryError.syntaxError(MySQLConnection.getError(statement))
         }
 
+        self.mysql = mysql
         self.statement = statement
         self.query = query
     }
@@ -98,6 +100,15 @@ public class MySQLPreparedStatement: PreparedStatement {
             guard mysql_stmt_execute(statement) == 0 else {
                 handleError(onCompletion: onCompletion)
                 return
+            }
+
+            do {
+              if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
+                try MySQLPreparedStatement("SELECT LAST_INSERT_ID()",mysql: self.mysql).execute(onCompletion: onCompletion)
+                return
+              }
+            } catch {
+              onCompletion(.error(error))
             }
 
             let affectedRows = mysql_stmt_affected_rows(statement)
@@ -268,6 +279,7 @@ public class MySQLPreparedStatement: PreparedStatement {
     private func allocate<T>(type: T.Type, capacity: Int, bind: inout MYSQL_BIND) -> UnsafeMutablePointer<T> {
 
         let length = UInt(capacity * MemoryLayout<T>.size)
+
         if bind.length == nil {
             bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         }
