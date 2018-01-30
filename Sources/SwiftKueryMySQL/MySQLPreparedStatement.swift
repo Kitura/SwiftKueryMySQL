@@ -104,7 +104,7 @@ public class MySQLPreparedStatement: PreparedStatement {
 
             do {
               if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
-                try MySQLPreparedStatement("SELECT LAST_INSERT_ID()",mysql: self.mysql).execute(onCompletion: onCompletion)
+                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS id",mysql: self.mysql).execute(onCompletion: onCompletion)
                 return
               }
             } catch {
