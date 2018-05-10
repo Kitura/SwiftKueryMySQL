@@ -83,14 +83,14 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if let binds = binds {
             for bind in binds {
-                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
-                bind.length.deallocate(capacity: 1)
-                bind.is_null.deallocate(capacity: 1)
-                bind.error.deallocate(capacity: 1)
+                bind.buffer.deallocate()
+                bind.length.deallocate()
+                bind.is_null.deallocate()
+                bind.error.deallocate()
             }
 
             if let bindPtr = bindPtr {
-                bindPtr.deallocate(capacity: binds.count)
+                bindPtr.deallocate()
             }
         }
 
@@ -102,12 +102,12 @@ public class MySQLResultFetcher: ResultFetcher {
             self.bindPtr = nil
 
             for bind in binds {
-                bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
-                bind.length.deallocate(capacity: 1)
-                bind.is_null.deallocate(capacity: 1)
-                bind.error.deallocate(capacity: 1)
+                bind.buffer.deallocate()
+                bind.length.deallocate()
+                bind.is_null.deallocate()
+                bind.error.deallocate()
             }
-            bindPtr.deallocate(capacity: binds.count)
+            bindPtr.deallocate()
 
             preparedStatement.release()
         }
@@ -153,7 +153,7 @@ public class MySQLResultFetcher: ResultFetcher {
         bind.buffer_length = UInt(size)
         bind.is_unsigned = 0
 
-        bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
+        bind.buffer = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: 1)
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
         bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
         bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
