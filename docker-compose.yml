@@ -1,5 +1,5 @@
 test:
-  image: ibmcom/swift-ubuntu:4.0.3
+  image: ibmcom/swift-ubuntu:4.1.1
   volumes:
       - .:/SwiftKueryMySQL
 command: bash -c "cd /SwiftKueryMySQL && swift package clean && swift build"
