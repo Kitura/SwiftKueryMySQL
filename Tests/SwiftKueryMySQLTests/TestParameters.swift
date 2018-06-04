@@ -51,7 +51,7 @@ class TestParameters: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer) CHARACTER SET latin2", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer) CHARACTER SET latin2", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -91,7 +91,7 @@ class TestParameters: MySQLTest {
                 XCTAssertEqual(rows?[2][1] as? Int32, 2, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of 2")
             }
 
-            let raw = "UPDATE " + t.tableName + " SET a = 'banana', b = ? WHERE a = ?"
+            let raw = "UPDATE " + packName(t.tableName) + " SET a = 'banana', b = ? WHERE a = ?"
             executeRawQueryWithParameters(raw, connection: connection, parameters: [4, "peach"]) { result, rows in
                 XCTAssertEqual(result.success, true, "UPDATE failed")
                 XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
@@ -116,7 +116,7 @@ class TestParameters: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -174,7 +174,7 @@ class TestParameters: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
