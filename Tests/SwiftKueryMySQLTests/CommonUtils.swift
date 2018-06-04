@@ -87,7 +87,7 @@ func executeRawQuery(_ raw: String, connection: Connection, callback: @escaping 
 }
 
 func cleanUp(table: String, connection: Connection, callback: @escaping (QueryResult)->()) {
-    connection.execute("DROP TABLE " + table) { result in
+    connection.execute("DROP TABLE " + packName(table)) { result in
         callback(result)
     }
 }
@@ -132,6 +132,15 @@ func getNumberOfRows(_ result: ResultSet) -> Int {
 
 func rowsAsArray(_ result: ResultSet) -> [[Any?]] {
     return result.rows.map{ $0 as [Any?] }
+}
+
+func packName(_ name: String) -> String {
+    var result = name
+    let identifierQuoteCharacter = "`"
+    if !result.hasPrefix(identifierQuoteCharacter) {
+        result = identifierQuoteCharacter + result + identifierQuoteCharacter
+    }
+    return result
 }
 
 // Dummy class for test framework
