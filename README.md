@@ -27,7 +27,7 @@
 ## Swift version
 The latest version of SwiftKueryMySQL requires **Swift 4.0**. You can download this version of the Swift binaries by following this [link](https://swift.org/download/). Compatibility with other Swift versions is not guaranteed.
 
-### Install MySQL
+## Install MySQL
 
 #### macOS
 ```
@@ -47,20 +47,10 @@ swift package -Xlinker -L/usr/local/lib generate-xcodeproj
 Download the release package for your Linux distribution from http://dev.mysql.com/downloads/repo/apt/
 For example: `wget https://repo.mysql.com//mysql-apt-config_0.8.10-1_all.deb`
 ```
-sudo dpkg -i mysql-apt-config_0.8.4-1_all.deb
+sudo dpkg -i mysql-apt-config_0.8.10-1_all.deb
 sudo apt-get update
 sudo apt-get install mysql-server libmysqlclient-dev
 sudo service mysql start
-```
-
-#### MySQL test setup
-
-To run `swift test` to validate your MySQL installation, you must first run the following commands to set up your MySQL:
-```
-mysql_upgrade -uroot || echo "No need to upgrade"
-mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
-mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
-mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 ```
 
 ## Usage
@@ -137,7 +127,18 @@ connection.connect() { error in
 }
 ```
 
-View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Kuery framework.
+View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
+
+
+## For testing purposes - MySQL test setup
+
+To run `swift test` to validate your MySQL installation, you must first run the following commands to set up your MySQL:
+```
+mysql_upgrade -uroot || echo "No need to upgrade"
+mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
+```
 
 ## API Documentation
 For more information visit our [API reference](https://ibm-swift.github.io/SwiftKueryMySQL/index.html).
