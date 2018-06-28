@@ -175,7 +175,7 @@ public class MySQLPreparedStatement: PreparedStatement {
             }
         }
 
-        guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
+        guard mysql_stmt_bind_param(statement, bindPtr) == false else {
             throw QueryError.databaseError(MySQLConnection.getError(statement!))
         }
     }
@@ -204,18 +204,18 @@ public class MySQLPreparedStatement: PreparedStatement {
 
     private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?, _ column: Column?) {
         if bind.is_null == nil {
-            bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
+            bind.is_null = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
         }
 
         guard let parameter = parameter else {
             bind.buffer_type = MYSQL_TYPE_NULL
-            bind.is_null.initialize(to: 1)
+            bind.is_null.initialize(to: true)
             return
         }
 
         bind.buffer_type = getType(parameter: parameter)
-        bind.is_null.initialize(to: 0)
-        bind.is_unsigned = 0
+        bind.is_null.initialize(to: false)
+        bind.is_unsigned = false
 
         switch parameter {
         case let string as String:
@@ -258,22 +258,22 @@ public class MySQLPreparedStatement: PreparedStatement {
             initialize(int, &bind)
         case let uint as UInt:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt8:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt16:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt32:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt64:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let unicodeScalar as UnicodeScalar:
             initialize(unicodeScalar, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         default:
             print("WARNING: Unhandled parameter \(parameter) (type: \(type(of: parameter))). Will attempt to convert it to a String")
             initialize(string: String(describing: parameter), &bind)
