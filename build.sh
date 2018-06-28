@@ -10,8 +10,6 @@ else
     mysql --version || { apt-get update && apt-get install -y mysql-server libmysqlclient-dev && service mysql start && mysql --version; }
 fi
 
-ls -al /usr/local/include/mysql/mysql/
-
 mysql_upgrade -uroot || echo "No need to upgrade"
 mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
 mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"

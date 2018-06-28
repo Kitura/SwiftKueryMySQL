@@ -1,1 +1,1 @@
-swift test -Xlinker -L/usr/local/lib
+swift test -Xlinker -L/usr/local/lib -Xcc -I/usr/local/include/mysql/
