@@ -20,8 +20,5 @@ matrix:
       osx_image: xcode9.2
       sudo: required
 
-#services:
-#  - mysql
-
 script:
   - ./build.sh
