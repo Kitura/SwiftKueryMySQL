@@ -108,6 +108,9 @@ public class MySQLPreparedStatement: PreparedStatement {
                   throw QueryError.syntaxError("Could not retrieve ID Column in order to return the ID value")
                 }
 
+                // Note: This will return the last auto incremented value in the
+                // table. It is not guaranteed that it will return the primary
+                // key value if multiple columns are auto incremented
                 try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)", mysql: self.mysql).execute(onCompletion: onCompletion)
                 return
               }
