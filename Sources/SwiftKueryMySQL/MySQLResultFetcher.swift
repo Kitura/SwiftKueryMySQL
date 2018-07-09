@@ -56,7 +56,7 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr[i] = binds[i]
         }
 
-        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == 0 else {
+        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == false else {
             throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
@@ -151,12 +151,12 @@ public class MySQLResultFetcher: ResultFetcher {
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
+        bind.is_unsigned = false
 
         bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.is_null = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
 
         return bind
     }
@@ -205,7 +205,7 @@ public class MySQLResultFetcher: ResultFetcher {
                 continue
             }
 
-            guard bind.is_null.pointee == 0 else {
+            guard bind.is_null.pointee == false else {
                 row.append(nil)
                 continue
             }
