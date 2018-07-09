@@ -16,12 +16,12 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:17.10 SWIFT_SNAPSHOT=https://swift.org/builds/swift-4.0-branch/ubuntu1610/swift-4.0-DEVELOPMENT-SNAPSHOT-2017-12-04-a/swift-4.0-DEVELOPMENT-SNAPSHOT-2017-12-04-a-ubuntu16.10.tar.gz
     - os: osx
       osx_image: xcode9.2
       sudo: required
-
-services:
-  - mysql
 
 script:
   - ./build.sh

@@ -24,9 +24,9 @@ Other install options: https://dev.mysql.com/doc/refman/5.7/en/osx-installation.
 On macOS, add `-Xlinker -L/usr/local/lib` to swift commands to point the linker to the MySQL library location.
 For example,
 ```
-swift build -Xlinker -L/usr/local/lib
-swift test -Xlinker -L/usr/local/lib
-swift package -Xlinker -L/usr/local/lib generate-xcodeproj
+swift build -Xlinker -L/usr/local/lib -Xcc -I/usr/local/bin
+swift test -Xlinker -L/usr/local/lib -Xcc -I/usr/local/bin
+swift package -Xlinker -L/usr/local/lib generate-xcodeproj -xcconfig-overrides Config.xcconfig
 ```
 
 #### Linux

@@ -1,0 +1,13 @@
+//
+//  Config.xcconfig
+//  SwiftKueryMySQL
+//
+//  Created by Matthew Kilner on 02/07/2018.
+//
+
+//:configuration = Debug
+HEADER_SEARCH_PATHS = /usr/local/include/mysql
+
+//:configuration = Release
+HEADER_SEARCH_PATHS = /usr/local/include/mysql
+
