@@ -57,7 +57,7 @@ class TestColumnTypes: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (tinyintCol tinyint, smallintCol smallint, unsignedmediumintCol mediumint, intCol int, bigintCol bigint, floatCol float, doubleCol double, dateCol date, timeCol time, datetimeCol datetime, mySqlTimeCol timestamp, blobCol blob, enumCol enum('enum1', 'enum2', 'enum3'), setCol set('smallSet', 'mediumSet', 'largeSet'), nulCol int, emptyCol varchar(10), text text)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (tinyintCol tinyint, smallintCol smallint, unsignedmediumintCol mediumint, intCol int, bigintCol bigint, floatCol float, doubleCol double, dateCol date, timeCol time, datetimeCol datetime, mySqlTimeCol timestamp, blobCol blob, enumCol enum('enum1', 'enum2', 'enum3'), setCol set('smallSet', 'mediumSet', 'largeSet'), nulCol int, emptyCol varchar(10), text text)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -119,7 +119,7 @@ class TestColumnTypes: MySQLTest {
                 print("INSERT with batchParameters: \(batchParameters) took \(end-start) seconds for \(parametersCount) rows")
             }
 
-            let selectCount = "SELECT count(*) from " + t.tableName
+            let selectCount = "SELECT count(*) from " + packName(t.tableName)
             executeRawQuery(selectCount, connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "SELECT failed")
                 XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
@@ -177,12 +177,12 @@ class TestColumnTypes: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (idCol int, randomCol varchar(500))", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (idCol int, randomCol varchar(500))", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            let rawInsert = "INSERT INTO " + t.tableName + " (idCol, randomCol) VALUES (?, ?)"
+            let rawInsert = "INSERT INTO " + packName(t.tableName) + " (idCol, randomCol) VALUES (?, ?)"
 
             let unhandledParameter = URL(string: "http://www.kitura.io")!
 
@@ -191,7 +191,7 @@ class TestColumnTypes: MySQLTest {
                 XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
             }
 
-            let rawSelect = "SELECT * from " + t.tableName
+            let rawSelect = "SELECT * from " + packName(t.tableName)
             executeRawQuery(rawSelect, connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "SELECT failed")
                 XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
@@ -213,7 +213,7 @@ class TestColumnTypes: MySQLTest {
                 cleanUp(table: t.tableName, connection: connection) { _ in }
             }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (idCol int, blobCol blob)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (idCol int, blobCol blob)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }

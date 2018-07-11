@@ -46,7 +46,7 @@ class TestTransaction: MySQLTest {
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -87,7 +87,7 @@ class TestTransaction: MySQLTest {
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -127,7 +127,7 @@ class TestTransaction: MySQLTest {
             let t = MyTable()
             cleanUp(table: t.tableName, connection: connection) { _ in }
 
-            executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -226,7 +226,7 @@ class TestTransaction: MySQLTest {
                     XCTAssertEqual(result.success, false, "Started second transaction")
                 }
 
-                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                     XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                     XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
                 }
@@ -268,7 +268,7 @@ class TestTransaction: MySQLTest {
                     XCTAssertNil(result.asError, "Error in start transaction: \(result.asError!)")
                 }
 
-                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                     XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                     XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
                 }
@@ -305,7 +305,7 @@ class TestTransaction: MySQLTest {
                     XCTAssertEqual(result.success, false, "Succeeded to create savepoint without transaction")
                 }
 
-                executeRawQuery("CREATE TABLE " +  t.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                     XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                     XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
                 }

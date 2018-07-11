@@ -87,17 +87,17 @@ class TestJoin: MySQLTest {
             cleanUp(table: myTable2.tableName, connection: connection) { _ in }
             cleanUp(table: myTable3.tableName, connection: connection) { _ in }
 
-            executeRawQuery("CREATE TABLE " +  myTable1.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable1.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            executeRawQuery("CREATE TABLE " +  myTable2.tableName + " (c varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable2.tableName) + " (c varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            executeRawQuery("CREATE TABLE " +  myTable3.tableName + " (d varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable3.tableName) + " (d varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
@@ -199,17 +199,17 @@ class TestJoin: MySQLTest {
             cleanUp(table: myTable2.tableName, connection: connection) { _ in }
             cleanUp(table: myTable3.tableName, connection: connection) { _ in }
 
-            executeRawQuery("CREATE TABLE " +  myTable1.tableName + " (a varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable1.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            executeRawQuery("CREATE TABLE " +  myTable2.tableName + " (c varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable2.tableName) + " (c varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
 
-            executeRawQuery("CREATE TABLE " +  myTable3.tableName + " (d varchar(40), b integer)", connection: connection) { result, rows in
+            executeRawQuery("CREATE TABLE " +  packName(myTable3.tableName) + " (d varchar(40), b integer)", connection: connection) { result, rows in
                 XCTAssertEqual(result.success, true, "CREATE TABLE failed")
                 XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
             }
