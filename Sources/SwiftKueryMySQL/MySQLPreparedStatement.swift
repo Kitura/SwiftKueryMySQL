@@ -104,6 +104,9 @@ public class MySQLPreparedStatement: PreparedStatement {
 
             do {
               if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
+                // Close current statement before executing another.
+                self.statement = nil
+                mysql_stmt_close(statement)
                 try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS id",mysql: self.mysql).execute(onCompletion: onCompletion)
                 return
               }
@@ -114,10 +117,6 @@ public class MySQLPreparedStatement: PreparedStatement {
             let affectedRows = mysql_stmt_affected_rows(statement)
             onCompletion(.success("\(affectedRows) rows affected"))
             return
-        }
-
-        defer {
-            mysql_free_result(resultMetadata)
         }
 
         do {
@@ -133,8 +132,9 @@ public class MySQLPreparedStatement: PreparedStatement {
             return
         }
         self.statement = nil
-        onCompletion(.error(QueryError.databaseError(MySQLConnection.getError(statement))))
-        mysql_stmt_close(statement)
+        let error = MySQLConnection.getError(statement)
+        print(error)
+        onCompletion(.error(QueryError.databaseError(error)))
     }
 
     private func allocateBinds(parameters: [Any?]) throws {

@@ -27,6 +27,7 @@ import SwiftKuery
 /// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
 /// Use `MySQLThreadSafeConnection` to share connection instances between multiple threads.
 public class MySQLConnection: Connection {
+
     private static let initOnce: () = {
         mysql_server_init(0, nil, nil) // this call is not thread-safe
     }()
@@ -134,8 +135,8 @@ public class MySQLConnection: Connection {
         let connectionGenerator: () -> Connection? = {
             let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet, reconnect: reconnect)
             connection.setTimeout(to: UInt(poolOptions.timeout))
-            connection.connect { _ in }
-            return connection.mysql != nil ? connection : nil
+            let error = connection.connectSync()
+            return error != nil ? nil : connection
         }
 
         let connectionReleaser: (_ connection: Connection) -> () = { connection in
@@ -157,40 +158,59 @@ public class MySQLConnection: Connection {
     /// Establish a connection with the database.
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
-    public func connect(onCompletion: (QueryError?) -> ()) {
-        let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
+    public func connect(onCompletion: @escaping (QueryError?) -> ()) {
+        DispatchQueue.global().async {
+            let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
 
-        var reconnect: Int8 = self.reconnect ? 1 : 0
-        withUnsafePointer(to: &reconnect) { ptr in
-            if mysql_options(mysql, MYSQL_OPT_RECONNECT, ptr) != 0 {
-                print("WARNING: Error setting MYSQL_OPT_RECONNECT")
-            }
-        }
-        
-        var timeoutSec = self.timeout / 1000 //Convert to seconds used in MySQL
-        withUnsafePointer(to: &timeoutSec) { ptr in
-            if mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, ptr) != 0 {
-                print("WARNING: Error setting MYSQL_OPT_CONNECT_TIMEOUT")
-            }
-        }
-
-        if mysql_real_connect(mysql, host, user, password, database, port, unixSocket, clientFlag) != nil
-            || mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
-
-            if mysql_set_character_set(mysql, characterSet) != 0 {
-                let defaultCharSet = String(cString: mysql_character_set_name(mysql))
-                print("WARNING: Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
+            var reconnect: Int8 = self.reconnect ? 1 : 0
+            withUnsafePointer(to: &reconnect) { ptr in
+                if mysql_options(mysql, MYSQL_OPT_RECONNECT, ptr) != 0 {
+                    print("WARNING: Error setting MYSQL_OPT_RECONNECT")
+                }
             }
 
-            self.mysql = mysql
-            onCompletion(nil) // success
-        } else {
-            self.mysql = nil
-            onCompletion(QueryError.connection(MySQLConnection.getError(mysql)))
-            mysql_thread_end() // should be called for each mysql_init() call
+            var timeoutSec = self.timeout / 1000 //Convert to seconds used in MySQL
+            withUnsafePointer(to: &timeoutSec) { ptr in
+                if mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, ptr) != 0 {
+                    print("WARNING: Error setting MYSQL_OPT_CONNECT_TIMEOUT")
+                }
+            }
+
+            if mysql_real_connect(mysql, self.host, self.user, self.password, self.database, self.port, self.unixSocket, self.clientFlag) != nil
+                || mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
+
+                if mysql_set_character_set(mysql, self.characterSet) != 0 {
+                    let defaultCharSet = String(cString: mysql_character_set_name(mysql))
+                    print("WARNING: Invalid characterSet: \(self.characterSet), using: \(defaultCharSet)")
+                }
+
+                self.mysql = mysql
+                onCompletion(nil) // success
+            } else {
+                self.mysql = nil
+                onCompletion(QueryError.connection(MySQLConnection.getError(mysql)))
+                mysql_thread_end() // should be called for each mysql_init() call
+            }
         }
     }
     
+    /// Establish a connection with the database.
+    ///
+    public func connectSync() -> QueryError? {
+        var error: QueryError?
+        let semaphore = DispatchSemaphore(value: 0)
+        connect { err in
+            error = err
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let errorUnwrapped = error else {
+            // Everything worked
+            return nil
+        }
+        return errorUnwrapped
+    }
+
     /// Set connection timeout
     ///
     /// - Parameter to: Timeout value in milliseconds
@@ -221,10 +241,42 @@ public class MySQLConnection: Connection {
     /// - Parameter query: The query to execute.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
-        if let preparedStatement = prepareStatement(query, onCompletion: onCompletion) {
-            preparedStatement.execute(onCompletion: onCompletion)
-            preparedStatement.release()
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            do {
+                let preparedStatement = try self.prepareStatement(query) as? MySQLPreparedStatement
+                guard let statement = preparedStatement else {
+                    return
+                }
+                statement.execute() { result in
+                    if result.asResultSet == nil {
+                        statement.release()
+                    }
+                    mysql_thread_end()
+                    onCompletion(result)
+                }
+            } catch {
+                mysql_thread_end()
+                onCompletion(.error(error))
+            }
         }
+    }
+
+    /// Execute a query.
+    ///
+    /// - Parameter query: The query to execute.
+    public func executeSync(query: Query) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(query: query) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Execute a query with parameters.
@@ -233,43 +285,162 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let preparedStatement = prepareStatement(query, onCompletion: onCompletion) {
-            preparedStatement.execute(parameters: parameters, onCompletion: onCompletion)
-            preparedStatement.release()
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            do {
+                let preparedStatement = try self.prepareStatement(query) as? MySQLPreparedStatement
+                guard let statement = preparedStatement else {
+                    return
+                }
+                statement.execute(parameters: parameters) { result in
+                    if result.asResultSet == nil {
+                        statement.release()
+                    }
+                    mysql_thread_end()
+                    onCompletion(result)
+                }
+            } catch {
+                mysql_thread_end()
+                onCompletion(.error(error))
+            }
+        }
+    }
+
+    /// Execute a query with parameters.
+    ///
+    /// - Parameter query: The query to execute.
+    /// - Parameter parameters: An array of the parameters.
+    public func executeSync(query: Query, parameters: [Any?]) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(query: query, parameters: parameters) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
+    }
+
+    /// Execute a raw query.
+    ///
+    /// - Parameter raw: A String with the raw query to execute.
+    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
+    public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            do {
+                let preparedStatement = try self.prepareStatement(raw) as? MySQLPreparedStatement
+                guard let statement = preparedStatement else {
+                    return
+                }
+                statement.execute() { result in
+                    if result.asResultSet == nil {
+                        statement.release()
+                    }
+                    mysql_thread_end()
+                    onCompletion(result)
+                }
+            } catch {
+                mysql_thread_end()
+                onCompletion(.error(error))
+            }
         }
     }
 
     /// Execute a raw query.
     ///
-    /// - Parameter query: A String with the query to execute.
+    /// - Parameter raw: A String with the raw query to execute.
+    public func executeSync(_ raw: String) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(raw) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
+    }
+
+    /// Execute a raw query with parameters.
+    ///
+    /// - Parameter raw: A String with the raw query to execute.
+    /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        if let preparedStatement = prepareStatement(raw, onCompletion: onCompletion) {
-            preparedStatement.execute(onCompletion: onCompletion)
-            preparedStatement.release()
+    public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            do {
+                let preparedStatement = try self.prepareStatement(raw) as? MySQLPreparedStatement
+                guard let statement = preparedStatement else {
+                    return
+                }
+                statement.execute(parameters: parameters) { result in
+                    if result.asResultSet == nil {
+                        statement.release()
+                    }
+                    mysql_thread_end()
+                    onCompletion(result)
+                }
+            } catch {
+                mysql_thread_end()
+                onCompletion(.error(error))
+            }
         }
     }
 
     /// Execute a raw query with parameters.
     ///
-    /// - Parameter query: A String with the query to execute.
+    /// - Parameter raw: A String with the raw query to execute.
     /// - Parameter parameters: An array of the parameters.
+    public func executeSync(_ raw: String, parameters: [Any?]) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(raw, parameters: parameters) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
+    }
+
+    /// NOT supported in MySQL
+    /// Execute a raw query with named parameters.
+    ///
+    /// - Parameter raw: A String with the raw query to execute.
+    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        if let preparedStatement = prepareStatement(raw, onCompletion: onCompletion) {
-            preparedStatement.execute(parameters: parameters, onCompletion: onCompletion)
-            preparedStatement.release()
+    public func execute(_ raw: String, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
+        DispatchQueue.global().async {
+            onCompletion(.error(QueryError.unsupported("Named parameters with raw queries are not supported in MySQL")))
         }
     }
 
     /// NOT supported in MySQL
     /// Execute a raw query with named parameters.
     ///
-    /// - Parameter query: A String with the query to execute.
+    /// - Parameter raw: A String with the raw query to execute.
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
-    /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
-    public func execute(_ raw: String, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters with raw queries are not supported in MySQL")))
+    public func executeSync(_ raw: String, parameters: [String:Any?]) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(raw, parameters: parameters) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Prepare statement.
@@ -296,8 +467,27 @@ public class MySQLConnection: Connection {
     /// - Parameter preparedStatement: The prepared statement to release.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func release(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ())) {
-        (preparedStatement as! MySQLPreparedStatement).release()
-        onCompletion(.successNoData)
+        DispatchQueue.global().async {
+            (preparedStatement as! MySQLPreparedStatement).release()
+            onCompletion(.successNoData)
+        }
+    }
+
+    /// Release a prepared statement.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to release.
+    public func releaseSync(preparedStatement: PreparedStatement) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        release(preparedStatement: preparedStatement) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Execute a prepared statement.
@@ -305,7 +495,28 @@ public class MySQLConnection: Connection {
     /// - Parameter preparedStatement: The prepared statement to execute.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ()))  {
-        (preparedStatement as! MySQLPreparedStatement).execute(onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            (preparedStatement as! MySQLPreparedStatement).execute(onCompletion: onCompletion)
+            mysql_thread_end()
+        }
+    }
+
+    /// Execute a prepared statement.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to execute.
+    public func executeSync(preparedStatement: PreparedStatement) -> QueryResult  {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(preparedStatement: preparedStatement) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Execute a prepared statement with parameters.
@@ -314,7 +525,31 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        (preparedStatement as! MySQLPreparedStatement).execute(parameters: parameters, onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            (preparedStatement as! MySQLPreparedStatement).execute(parameters: parameters) { result in
+                mysql_thread_end()
+                onCompletion(result)
+            }
+        }
+    }
+
+    /// Execute a prepared statement with parameters.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to execute.
+    /// - Parameter parameters: An array of the parameters.
+    public func executeSync(preparedStatement: PreparedStatement, parameters: [Any?]) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(preparedStatement: preparedStatement, parameters: parameters) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Execute a prepared statement with parameters.
@@ -323,28 +558,102 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        onCompletion(.error(QueryError.unsupported("Named parameters in prepared statemennts are not supported in MySQL")))
+        DispatchQueue.global().async {
+            onCompletion(.error(QueryError.unsupported("Named parameters in prepared statemennts are not supported in MySQL")))
+        }
+    }
+
+    /// Execute a prepared statement with parameters.
+    ///
+    /// - Parameter preparedStatement: The prepared statement to execute.
+    /// - Parameter parameters: A dictionary of the parameters with parameter names as the keys.
+    public func executeSync(preparedStatement: PreparedStatement, parameters: [String:Any?]) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        execute(preparedStatement: preparedStatement, parameters: parameters) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Start a transaction.
     ///
     /// - Parameter onCompletion: The function to be called when the execution of start transaction command has completed.
     public func startTransaction(onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "START TRANSACTION", inTransaction: false, changeTransactionState: true, errorMessage: "Failed to start the transaction", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "START TRANSACTION", inTransaction: false, changeTransactionState: true, errorMessage: "Failed to start the transaction", onCompletion: onCompletion)
+        }
+    }
+
+    /// Start a transaction.
+    ///
+    public func startTransactionSync() -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        startTransaction() { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Commit the current transaction.
     ///
     /// - Parameter onCompletion: The function to be called when the execution of commit transaction command has completed.
     public func commit(onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "COMMIT", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to commit the transaction", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "COMMIT", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to commit the transaction", onCompletion: onCompletion)
+        }
+    }
+
+    /// Commit the current transaction.
+    ///
+    public func commitSync() -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        commit() { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Rollback the current transaction.
     ///
     /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
     public func rollback(onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "ROLLBACK", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to rollback the transaction", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "ROLLBACK", inTransaction: true, changeTransactionState: true, errorMessage: "Failed to rollback the transaction", onCompletion: onCompletion)
+        }
+    }
+
+    /// Rollback the current transaction.
+    ///
+    public func rollbackSync() -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        rollback() { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Create a savepoint.
@@ -352,7 +661,26 @@ public class MySQLConnection: Connection {
     /// - Parameter savepoint: The name to  be given to the created savepoint.
     /// - Parameter onCompletion: The function to be called when the execution of create savepoint command has completed.
     public func create(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to create the savepoint \(savepoint)", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to create the savepoint \(savepoint)", onCompletion: onCompletion)
+        }
+    }
+
+    /// Create a savepoint.
+    ///
+    /// - Parameter savepoint: The name to  be given to the created savepoint.
+    public func createSync(savepoint: String) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        create(savepoint: savepoint) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Rollback the current transaction to the specified savepoint.
@@ -360,7 +688,26 @@ public class MySQLConnection: Connection {
     /// - Parameter to savepoint: The name of the savepoint to rollback to.
     /// - Parameter onCompletion: The function to be called when the execution of rolback transaction command has completed.
     public func rollback(to savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "ROLLBACK TO \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to rollback to the savepoint \(savepoint)", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "ROLLBACK TO \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to rollback to the savepoint \(savepoint)", onCompletion: onCompletion)
+        }
+    }
+
+    /// Rollback the current transaction to the specified savepoint.
+    ///
+    /// - Parameter to savepoint: The name of the savepoint to rollback to.
+    public func rollbackSync(to savepoint: String) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        rollback(to: savepoint) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     /// Release a savepoint.
@@ -368,7 +715,26 @@ public class MySQLConnection: Connection {
     /// - Parameter savepoint: The name of the savepoint to release.
     /// - Parameter onCompletion: The function to be called when the execution of release savepoint command has completed.
     public func release(savepoint: String, onCompletion: @escaping ((QueryResult) -> ())) {
-        executeTransaction(command: "RELEASE SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to release the savepoint \(savepoint)", onCompletion: onCompletion)
+        DispatchQueue.global().async {
+            self.executeTransaction(command: "RELEASE SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to release the savepoint \(savepoint)", onCompletion: onCompletion)
+        }
+    }
+
+    /// Release a savepoint.
+    ///
+    /// - Parameter savepoint: The name of the savepoint to release.
+    public func releaseSync(savepoint: String) -> QueryResult {
+        var result: QueryResult?
+        let semaphore = DispatchSemaphore(value: 0)
+        release(savepoint: savepoint) { res in
+            result = res
+            semaphore.signal()
+        }
+        semaphore.wait()
+        guard let resultUnwrapped = result else {
+            return (.error(QueryError.noResult("No ResultSet from execute")))
+        }
+        return resultUnwrapped
     }
 
     func prepareStatement(_ query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> MySQLPreparedStatement? {

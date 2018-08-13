@@ -34,7 +34,7 @@ public class MySQLThreadSafeConnection: MySQLConnection {
     /// Establish a connection with the database.
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
-    public override func connect(onCompletion: (QueryError?) -> ()) {
+    public override func connect(onCompletion: @escaping (QueryError?) -> ()) {
         threadSafe {
             super.connect(onCompletion: onCompletion)
         }

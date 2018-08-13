@@ -33,8 +33,11 @@ public class MySQLResultFetcher: ResultFetcher {
     private let charsetnr: [UInt32]
 
     private var hasMoreRows = true
+    
+    private var resultMetadata: UnsafeMutablePointer<MYSQL_RES>? = nil
 
     init(preparedStatement: MySQLPreparedStatement, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
+        self.resultMetadata = resultMetadata
         guard let fields = mysql_fetch_fields(resultMetadata) else {
             throw MySQLResultFetcher.initError(preparedStatement)
         }
@@ -109,23 +112,32 @@ public class MySQLResultFetcher: ResultFetcher {
             }
             bindPtr.deallocate(capacity: binds.count)
 
+            mysql_free_result(resultMetadata)
             preparedStatement.release()
         }
+    }
+
+    public func done() {
+        close()
     }
 
     /// Fetch the next row of the query result. This function is blocking.
     ///
     /// - Returns: An array of values of type Any? representing the next row from the query result.
     public func fetchNext() -> [Any?]? {
+        mysql_thread_init()
         guard hasMoreRows else {
+            mysql_thread_end()
             return nil
         }
 
         if let row = buildRow() {
+            mysql_thread_end()
             return row
         } else {
             hasMoreRows = false
             close()
+            mysql_thread_end()
             return nil
         }
     }

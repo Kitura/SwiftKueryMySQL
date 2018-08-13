@@ -15,8 +15,34 @@
  **/
 
 import XCTest
+import Foundation
 import SwiftKuery
 import SwiftKueryMySQL
+
+func read(fileName: String) -> String {
+    // Read in a configuration file into an NSData
+    do {
+        var pathToTests = #file
+        if pathToTests.hasSuffix("CommonUtils.swift") {
+            pathToTests = pathToTests.replacingOccurrences(of: "CommonUtils.swift", with: "")
+        }
+        let fileData = try Data(contentsOf: URL(fileURLWithPath: "\(pathToTests)\(fileName)"))
+        XCTAssertNotNil(fileData, "Failed to read in the \(fileName) file")
+
+        let resultString = String(data: fileData, encoding: String.Encoding.utf8)
+
+        guard
+            let resultLiteral = resultString
+            else {
+                XCTFail("Error in \(fileName).")
+                exit(1)
+        }
+        return resultLiteral.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+    } catch {
+        XCTFail("Error in \(fileName).")
+        exit(1)
+    }
+}
 
 func executeQuery(query: Query, connection: Connection, callback: @escaping (QueryResult, [[Any?]]?)->()) {
     do {
@@ -143,5 +169,70 @@ func packName(_ name: String) -> String {
     return result
 }
 
-// Dummy class for test framework
-class CommonUtils { }
+class CommonUtils {
+    private var pool: ConnectionPool?
+    static let sharedInstance = CommonUtils()
+    private init() {}
+
+    func getConnectionPool(characterSet: String? = nil) -> ConnectionPool {
+        if let pool = pool {
+            return pool
+        }
+        do {
+            let connectionFile = #file.replacingOccurrences(of: "CommonUtils.swift", with: "connection.json")
+            let data = Data(referencing: try NSData(contentsOfFile: connectionFile))
+            let json = try JSONSerialization.jsonObject(with: data)
+
+            if let dictionary = json as? [String: String] {
+                let host = dictionary["host"]
+                let username = dictionary["username"]
+                let password = dictionary["password"]
+                let database = dictionary["database"]
+                var port: Int? = nil
+                if let portString = dictionary["port"] {
+                    port = Int(portString)
+                }
+
+                let randomBinary: UInt32
+                #if os(Linux)
+                randomBinary = UInt32(random() % 2)
+                #else
+                randomBinary = arc4random_uniform(2)
+                #endif
+
+                let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1, timeout: 10000)
+
+                if characterSet != nil || randomBinary == 0 {
+                    pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
+                } else {
+                    var urlString = "mysql://"
+                    if let username = username, let password = password {
+                        urlString += "\(username):\(password)@"
+                    }
+                    urlString += host ?? "localhost"
+                    if let port = port {
+                        urlString += ":\(port)"
+                    }
+                    if let database = database {
+                        urlString += "/\(database)"
+                    }
+
+                    if let url = URL(string: urlString) {
+                        pool = MySQLConnection.createPool(url: url, poolOptions: poolOptions)
+                    } else {
+                        pool = nil
+                        XCTFail("Invalid URL format: \(urlString)")
+                    }
+                }
+            } else {
+                pool = nil
+                XCTFail("Invalid format for connection.json contents: \(json)")
+            }
+        } catch {
+            print("caught throw")
+            pool = nil
+            XCTFail(error.localizedDescription)
+        }
+        return pool!
+    }
+}
