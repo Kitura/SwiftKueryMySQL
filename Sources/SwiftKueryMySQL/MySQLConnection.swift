@@ -490,7 +490,7 @@ class MySQLColumnBuilder: ColumnCreator {
     }
 
     func typeCanBeAutoIncrement(_ type: String) -> Bool {
-        switch type.lowercased() {
+        switch type {
         case  "integer", "smallint", "tinyint", "mediumint", "bigint":
             return true
         case "float", "double":
