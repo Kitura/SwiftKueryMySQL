@@ -443,7 +443,7 @@ class MySQLColumnBuilder: ColumnCreator {
             result += typeString
         }
 
-        if column.isPrimaryKey && !column.autoIncrement {
+        if column.isPrimaryKey {
             result += " PRIMARY KEY"
         }
         if column.isNotNullable {
