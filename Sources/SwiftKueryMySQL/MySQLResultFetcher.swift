@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017, 2018
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,17 +17,13 @@
 import SwiftKuery
 import Foundation
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import libMySQLWrapper
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
     private var preparedStatement: MySQLPreparedStatement
-    private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
-    private let binds: [MYSQL_BIND]
+    private var bindPtr: UnsafeMutablePointer<WRAPPER_MYSQL_BIND>?
+    private let binds: [WRAPPER_MYSQL_BIND]
 
     private let fieldNames: [String]
     private let charsetnr: [UInt32]
@@ -35,12 +31,12 @@ public class MySQLResultFetcher: ResultFetcher {
     private var hasMoreRows = true
 
     init(preparedStatement: MySQLPreparedStatement, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
-        guard let fields = mysql_fetch_fields(resultMetadata) else {
+        guard let fields = wrapper_mysql_fetch_fields(resultMetadata) else {
             throw MySQLResultFetcher.initError(preparedStatement)
         }
 
-        let numFields = Int(mysql_num_fields(resultMetadata))
-        var binds = [MYSQL_BIND]()
+        let numFields = Int(wrapper_mysql_num_fields(resultMetadata))
+        var binds = [WRAPPER_MYSQL_BIND]()
         var fieldNames = [String]()
         var charsetnr = [UInt32]()
 
@@ -51,16 +47,12 @@ public class MySQLResultFetcher: ResultFetcher {
             charsetnr.append(field.charsetnr)
         }
 
-        let bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: binds.count)
+        let bindPtr = UnsafeMutablePointer<WRAPPER_MYSQL_BIND>.allocate(capacity: binds.count)
         for i in 0 ..< binds.count {
             bindPtr[i] = binds[i]
         }
 
-        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == 0 else {
-            throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
-        }
-
-        guard mysql_stmt_execute(preparedStatement.statement) == 0 else {
+        guard wrapper_mysql_stmt_bind_result(preparedStatement.statement, bindPtr, Int32(binds.count)) == false else {
             throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
@@ -75,7 +67,7 @@ public class MySQLResultFetcher: ResultFetcher {
         close()
     }
 
-    private static func initError(_ preparedStatement: MySQLPreparedStatement, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> QueryError {
+    private static func initError(_ preparedStatement: MySQLPreparedStatement, bindPtr: UnsafeMutablePointer<WRAPPER_MYSQL_BIND>? = nil, binds: [WRAPPER_MYSQL_BIND]? = nil) -> QueryError {
 
         defer {
             preparedStatement.release()
@@ -110,6 +102,7 @@ public class MySQLResultFetcher: ResultFetcher {
     }
 
     private func close() {
+        let bindCount = binds.count
         if let bindPtr = bindPtr {
             self.bindPtr = nil
 
@@ -132,6 +125,7 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr.deallocate(capacity: binds.count)
             #endif
 
+            wrapper_release_statement_binds(preparedStatement.statement, Int32(bindCount))
             preparedStatement.release()
         }
     }
@@ -168,13 +162,13 @@ public class MySQLResultFetcher: ResultFetcher {
         return fieldNames
     }
 
-    private static func getOutputBind(_ field: MYSQL_FIELD) -> MYSQL_BIND {
+    private static func getOutputBind(_ field: MYSQL_FIELD) -> WRAPPER_MYSQL_BIND {
         let size = getSize(field: field)
 
-        var bind = MYSQL_BIND()
+        var bind = WRAPPER_MYSQL_BIND()
         bind.buffer_type = field.type
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
+        bind.is_unsigned = false
 
         #if swift(>=4.1)
         bind.buffer = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: 1)
@@ -183,8 +177,8 @@ public class MySQLResultFetcher: ResultFetcher {
         #endif
         
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.is_null = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
 
         return bind
     }
@@ -215,7 +209,7 @@ public class MySQLResultFetcher: ResultFetcher {
     }
 
     private func buildRow() -> [Any?]? {
-        let fetchStatus = mysql_stmt_fetch(preparedStatement.statement)
+        let fetchStatus = wrapper_mysql_stmt_fetch(preparedStatement.statement, bindPtr, Int32(binds.count))
         if fetchStatus == MYSQL_NO_DATA {
             return nil
         }
@@ -233,7 +227,7 @@ public class MySQLResultFetcher: ResultFetcher {
                 continue
             }
 
-            guard bind.is_null.pointee == 0 else {
+            guard bind.is_null.pointee == false else {
                 row.append(nil)
                 continue
             }
@@ -291,7 +285,7 @@ public class MySQLResultFetcher: ResultFetcher {
         return row
     }
 
-    private func getLength(_ bind: MYSQL_BIND) -> Int {
+    private func getLength(_ bind: WRAPPER_MYSQL_BIND) -> Int {
         return Int(bind.length.pointee > bind.buffer_length ? bind.buffer_length : bind.length.pointee)
     }
 

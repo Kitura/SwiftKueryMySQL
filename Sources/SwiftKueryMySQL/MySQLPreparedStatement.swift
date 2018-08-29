@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017, 2018
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,34 +17,32 @@
 import Foundation
 import SwiftKuery
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import libMySQLWrapper
 
 /// MySQL implementation for prepared statements.
 public class MySQLPreparedStatement: PreparedStatement {
     private(set) var statement: UnsafeMutablePointer<MYSQL_STMT>?
     private let query: Query?
 
-    private var binds = [MYSQL_BIND]()
+    private var binds = [WRAPPER_MYSQL_BIND]()
     private var bindsCapacity = 0
-    private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
+    private var bindPtr: UnsafeMutablePointer<WRAPPER_MYSQL_BIND>? = nil
     private var mysql: UnsafeMutablePointer<MYSQL>?
+
+    private var parameterBinds: UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>? = nil
 
     init(_ raw: String, query: Query? = nil, mysql: UnsafeMutablePointer<MYSQL>?) throws {
         guard let mysql = mysql else {
             throw QueryError.connection("Not connected, call connect() before execute()")
         }
 
-        guard let statement = mysql_stmt_init(mysql) else {
+        guard let statement = wrapper_mysql_stmt_init(mysql) else {
             throw QueryError.connection(MySQLConnection.getError(mysql))
         }
 
-        guard mysql_stmt_prepare(statement, raw, UInt(raw.utf8.count)) == 0 else {
+        guard wrapper_mysql_stmt_prepare(statement, raw, UInt(raw.utf8.count)) == 0 else {
             defer {
-                mysql_stmt_close(statement)
+                wrapper_mysql_stmt_close(statement)
             }
             throw QueryError.syntaxError(MySQLConnection.getError(statement))
         }
@@ -61,10 +59,11 @@ public class MySQLPreparedStatement: PreparedStatement {
     func release() {
         deallocateBinds()
 
-        if let statement = self.statement {
-            self.statement = nil
-            mysql_stmt_close(statement)
+        guard let statement = self.statement else {
+            return
         }
+        self.statement = nil
+        wrapper_mysql_stmt_close(statement)
     }
 
     func execute(parameters: [Any?]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
@@ -81,26 +80,31 @@ public class MySQLPreparedStatement: PreparedStatement {
                 }
             } else { // true only for the first time execute() is called for this PreparedStatement
                 bindsCapacity = parameters.count
-                bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: bindsCapacity)
+                bindPtr = UnsafeMutablePointer<WRAPPER_MYSQL_BIND>.allocate(capacity: bindsCapacity)
             }
 
             do {
                 try allocateBinds(parameters: parameters)
             } catch {
                 self.statement = nil
-                mysql_stmt_close(statement)
+                wrapper_mysql_stmt_close(statement)
                 onCompletion(.error(error))
                 return
             }
         }
 
-        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
-            // non-query statement (insert, update, delete)
+        let metadata = wrapper_mysql_stmt_result_metadata(statement)
 
-            guard mysql_stmt_execute(statement) == 0 else {
-                handleError(onCompletion: onCompletion)
-                return
-            }
+        guard wrapper_mysql_stmt_execute(statement) == 0 else {
+            handleError(onCompletion: onCompletion)
+            return
+        }
+
+        if parameterBinds != nil {
+            wrapper_release_params(parameterBinds, Int32(binds.count))
+        }
+
+        guard let resultMetadata = metadata else {
 
             do {
               if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
@@ -111,13 +115,13 @@ public class MySQLPreparedStatement: PreparedStatement {
               onCompletion(.error(error))
             }
 
-            let affectedRows = mysql_stmt_affected_rows(statement)
+            let affectedRows = wrapper_mysql_stmt_affected_rows(statement)
             onCompletion(.success("\(affectedRows) rows affected"))
             return
         }
 
         defer {
-            mysql_free_result(resultMetadata)
+            wrapper_mysql_free_result(resultMetadata)
         }
 
         do {
@@ -134,7 +138,7 @@ public class MySQLPreparedStatement: PreparedStatement {
         }
         self.statement = nil
         onCompletion(.error(QueryError.databaseError(MySQLConnection.getError(statement))))
-        mysql_stmt_close(statement)
+        wrapper_mysql_stmt_close(statement)
     }
 
     private func allocateBinds(parameters: [Any?]) throws {
@@ -157,7 +161,7 @@ public class MySQLPreparedStatement: PreparedStatement {
 
         if binds.isEmpty { // first parameter set, create new bind and bind it to the parameter
             for (index, parameter) in parameters.enumerated() {
-                var bind = MYSQL_BIND()
+                var bind = WRAPPER_MYSQL_BIND()
                 setBind(&bind, parameter, columns?[index])
                 binds.append(bind)
                 bindPtr![index] = bind
@@ -171,9 +175,10 @@ public class MySQLPreparedStatement: PreparedStatement {
             }
         }
 
-        guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
+        guard let parameterBinds = wrapper_mysql_stmt_bind_param(statement, bindPtr, Int32(binds.count)) else {
             throw QueryError.databaseError(MySQLConnection.getError(statement!))
         }
+        self.parameterBinds = parameterBinds
     }
 
     private func deallocateBinds() {
@@ -214,20 +219,20 @@ public class MySQLPreparedStatement: PreparedStatement {
         binds.removeAll()
     }
 
-    private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?, _ column: Column?) {
+    private func setBind(_ bind: inout WRAPPER_MYSQL_BIND, _ parameter: Any?, _ column: Column?) {
         if bind.is_null == nil {
-            bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
+            bind.is_null = UnsafeMutablePointer<Bool>.allocate(capacity: 1)
         }
 
         guard let parameter = parameter else {
             bind.buffer_type = MYSQL_TYPE_NULL
-            bind.is_null.initialize(to: 1)
+            bind.is_null.initialize(to: true)
             return
         }
 
         bind.buffer_type = getType(parameter: parameter)
-        bind.is_null.initialize(to: 0)
-        bind.is_unsigned = 0
+        bind.is_null.initialize(to: false)
+        bind.is_unsigned = false
 
         switch parameter {
         case let string as String:
@@ -270,29 +275,29 @@ public class MySQLPreparedStatement: PreparedStatement {
             initialize(int, &bind)
         case let uint as UInt:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt8:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt16:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt32:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let uint as UInt64:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         case let unicodeScalar as UnicodeScalar:
             initialize(unicodeScalar, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = true
         default:
             print("WARNING: Unhandled parameter \(parameter) (type: \(type(of: parameter))). Will attempt to convert it to a String")
             initialize(string: String(describing: parameter), &bind)
         }
     }
 
-    private func allocate<T>(type: T.Type, capacity: Int, bind: inout MYSQL_BIND) -> UnsafeMutablePointer<T> {
+    private func allocate<T>(type: T.Type, capacity: Int, bind: inout WRAPPER_MYSQL_BIND) -> UnsafeMutablePointer<T> {
 
         let length = UInt(capacity * MemoryLayout<T>.size)
 
@@ -322,12 +327,12 @@ public class MySQLPreparedStatement: PreparedStatement {
         return typedBuffer
     }
 
-    private func initialize<T>(_ parameter: T, _ bind: inout MYSQL_BIND) {
+    private func initialize<T>(_ parameter: T, _ bind: inout WRAPPER_MYSQL_BIND) {
         let typedBuffer = allocate(type: type(of: parameter), capacity: 1, bind: &bind)
         typedBuffer.initialize(to: parameter)
     }
 
-    private func initialize(string: String, _ bind: inout MYSQL_BIND) {
+    private func initialize(string: String, _ bind: inout WRAPPER_MYSQL_BIND) {
         let utf8 = Array(string.utf8)
         let typedBuffer = allocate(type: UInt8.self, capacity: utf8.count, bind: &bind)
         typedBuffer.initialize(from: utf8, count: utf8.count)
