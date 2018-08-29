@@ -1,1 +1,1 @@
-swift package -Xlinker generate-xcodeproj --xcconfig-overrides Config.xcconfig
+swift package generate-xcodeproj --xcconfig-overrides Config.xcconfig
