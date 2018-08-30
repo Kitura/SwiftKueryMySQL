@@ -24,8 +24,6 @@
 #ifndef libMySQLWrapper_h
 #define libMySQLWrapper_h
 
-#include <stdio.h>
-
 #ifdef __linux__
     #include <stdbool.h>
 #else
