@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017, 2018
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,18 +17,14 @@
 import Foundation
 import SwiftKuery
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import libMySQLWrapper
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
 /// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
 /// Use `MySQLThreadSafeConnection` to share connection instances between multiple threads.
 public class MySQLConnection: Connection {
     private static let initOnce: () = {
-        mysql_server_init(0, nil, nil) // this call is not thread-safe
+        wrapper_mysql_library_init(0, nil, nil) // this call is not thread-safe
     }()
 
     static let dateFormatter = getDateFormatter("yyyy-MM-dd")
@@ -53,7 +49,7 @@ public class MySQLConnection: Connection {
     private var inTransaction = false
 
     public var isConnected: Bool {
-        return mysql != nil && mysql_ping(mysql) == 0
+        return mysql != nil && wrapper_mysql_ping(mysql) == 0
     }
 
     /// The `QueryBuilder` with MySQL specific substitutions.
@@ -158,27 +154,27 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
     public func connect(onCompletion: (QueryError?) -> ()) {
-        let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
+        let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? wrapper_mysql_init(nil)
 
         var reconnect: Int8 = self.reconnect ? 1 : 0
         withUnsafePointer(to: &reconnect) { ptr in
-            if mysql_options(mysql, MYSQL_OPT_RECONNECT, ptr) != 0 {
+            if wrapper_mysql_options(mysql, MYSQL_OPT_RECONNECT, ptr) != 0 {
                 print("WARNING: Error setting MYSQL_OPT_RECONNECT")
             }
         }
         
         var timeoutSec = self.timeout / 1000 //Convert to seconds used in MySQL
         withUnsafePointer(to: &timeoutSec) { ptr in
-            if mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, ptr) != 0 {
+            if wrapper_mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, ptr) != 0 {
                 print("WARNING: Error setting MYSQL_OPT_CONNECT_TIMEOUT")
             }
         }
 
-        if mysql_real_connect(mysql, host, user, password, database, port, unixSocket, clientFlag) != nil
-            || mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
+        if wrapper_mysql_real_connect(mysql, host, user, password, database, port, unixSocket, clientFlag) != nil
+            || wrapper_mysql_errno(mysql) == UInt32(CR_ALREADY_CONNECTED) {
 
-            if mysql_set_character_set(mysql, characterSet) != 0 {
-                let defaultCharSet = String(cString: mysql_character_set_name(mysql))
+            if wrapper_mysql_set_character_set(mysql, characterSet) != 0 {
+                let defaultCharSet = String(cString: wrapper_mysql_character_set_name(mysql))
                 print("WARNING: Invalid characterSet: \(characterSet), using: \(defaultCharSet)")
             }
 
@@ -187,7 +183,7 @@ public class MySQLConnection: Connection {
         } else {
             self.mysql = nil
             onCompletion(QueryError.connection(MySQLConnection.getError(mysql)))
-            mysql_thread_end() // should be called for each mysql_init() call
+            wrapper_mysql_thread_end() // should be called for each mysql_init() call
         }
     }
     
@@ -202,8 +198,8 @@ public class MySQLConnection: Connection {
     public func closeConnection() {
         if let mysql = self.mysql {
             self.mysql = nil
-            mysql_close(mysql)
-            mysql_thread_end() // should be called for each mysql_init() call
+            wrapper_mysql_close(mysql)
+            wrapper_mysql_thread_end() // should be called for each mysql_init() call
         }
     }
 
@@ -402,7 +398,7 @@ public class MySQLConnection: Connection {
             return
         }
 
-        if mysql_query(mysql, command) == 0 {
+        if wrapper_mysql_query(mysql, command) == 0 {
             if changeTransactionState {
                 self.inTransaction = !self.inTransaction
             }
@@ -413,10 +409,10 @@ public class MySQLConnection: Connection {
     }
 
     static func getError(_ connection: UnsafeMutablePointer<MYSQL>) -> String {
-        return "ERROR \(mysql_errno(connection)): " + String(cString: mysql_error(connection))
+        return "ERROR \(wrapper_mysql_errno(connection)): " + String(cString: wrapper_mysql_error(connection))
     }
 
     static func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
-        return "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
+        return "ERROR \(wrapper_mysql_stmt_errno(statement)): " + String(cString: wrapper_mysql_stmt_error(statement))
     }
 }

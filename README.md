@@ -21,12 +21,12 @@ mysql.server start
 ```
 Other install options: https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html
 
-On macOS, add `-Xlinker -L/usr/local/lib` to swift commands to point the linker to the MySQL library location.
+On macOS, add `-Xlinker -L/usr/local/lib -Xlinker -lmysqlclient -Xcc -I/usr/local/include` to swift commands to point the linker to the MySQL library location and header files. When generating an xcode project simply add `--xcconfig-overrides Config.xcconfig' to configure the necessary paths in its build settings.
 For example,
 ```
-swift build -Xlinker -L/usr/local/lib
-swift test -Xlinker -L/usr/local/lib
-swift package -Xlinker -L/usr/local/lib generate-xcodeproj
+swift build -Xlinker -L/usr/local/lib -Xcc -I/usr/local/include/ -Xcc -I/usr/local/include/mysql/
+swift test -Xlinker -L/usr/local/lib -Xlinker -lmysqlclient -Xcc -I/usr/local/include/ -Xcc -I/usr/local/include/mysql/
+swift package generate-xcodeproj --xcconfig-overrides Config.xcconfig
 ```
 
 #### Linux
