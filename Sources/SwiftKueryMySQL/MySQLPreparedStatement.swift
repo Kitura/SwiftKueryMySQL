@@ -189,16 +189,32 @@ public class MySQLPreparedStatement: PreparedStatement {
 
         for bind in binds {
             if bind.buffer != nil {
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                #endif
             }
             if bind.length != nil {
+                #if swift(>=4.1)
+                bind.length.deallocate()
+                #else
                 bind.length.deallocate(capacity: 1)
+                #endif
             }
             if bind.is_null != nil {
+                #if swift(>=4.1)
+                bind.is_null.deallocate()
+                #else
                 bind.is_null.deallocate(capacity: 1)
+                #endif
             }
         }
+        #if swift(>=4.1)
+        bindPtr.deallocate()
+        #else
         bindPtr.deallocate(capacity: bindsCapacity)
+        #endif
         binds.removeAll()
     }
 
@@ -295,7 +311,11 @@ public class MySQLPreparedStatement: PreparedStatement {
         } else {
             if bind.buffer != nil {
                 // deallocate existing smaller buffer
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                #endif
             }
 
             typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: capacity)

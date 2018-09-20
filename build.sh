@@ -4,7 +4,7 @@ set -o verbose
 
 
 if [[ $TRAVIS_OS_NAME == "osx" ]]; then
-    mysql --version || { brew update && brew install mysql && mysql.server start && mysql --version; }
+    mysql --version || { brew update && brew install mysql@5.7 && brew link mysql@5.7 --force && mysql.server start && mysql --version; }
 else
     export DEBIAN_FRONTEND="noninteractive"
     mysql --version || { apt-get update && apt-get install -y mysql-server libmysqlclient-dev && service mysql start && mysql --version; }
