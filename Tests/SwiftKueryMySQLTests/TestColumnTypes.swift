@@ -20,11 +20,7 @@ import SwiftKuery
 
 @testable import SwiftKueryMySQL
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import libMySQLWrapper
 
 class TestColumnTypes: MySQLTest {
 
