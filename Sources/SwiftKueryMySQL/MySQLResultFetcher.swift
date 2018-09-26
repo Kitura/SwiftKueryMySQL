@@ -17,7 +17,7 @@
 import SwiftKuery
 import Foundation
 
-import libMySQLWrapper
+import CMySQL
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {

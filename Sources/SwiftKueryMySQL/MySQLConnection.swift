@@ -17,7 +17,7 @@
 import Foundation
 import SwiftKuery
 
-import libMySQLWrapper
+import CMySQL
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
 /// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.

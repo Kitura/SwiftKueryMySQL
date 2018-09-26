@@ -17,7 +17,7 @@
 import Foundation
 import SwiftKuery
 
-import libMySQLWrapper
+import CMySQL
 
 /// MySQL implementation for prepared statements.
 public class MySQLPreparedStatement: PreparedStatement {

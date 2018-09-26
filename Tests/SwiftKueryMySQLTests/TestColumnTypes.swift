@@ -18,9 +18,9 @@ import XCTest
 import Foundation
 import SwiftKuery
 
-@testable import SwiftKueryMySQL
+import CMySQL
 
-import libMySQLWrapper
+@testable import SwiftKueryMySQL
 
 class TestColumnTypes: MySQLTest {
 
