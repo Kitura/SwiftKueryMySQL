@@ -29,22 +29,19 @@ let package = Package(
         )
     ],
     dependencies: [
+        .package(url: "https://github.com/IBM-Swift/CMySQL.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", .branch("next")),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
-            name: "libMySQLWrapper",
-            dependencies: []),
-        .target(
             name: "SwiftKueryMySQL",
-            dependencies: ["SwiftKuery", "libMySQLWrapper"]
+            dependencies: ["SwiftKuery", "CMySQL"]
         ),
         .testTarget(
             name: "SwiftKueryMySQLTests",
-            dependencies: ["SwiftKueryMySQL","libMySQLWrapper"]
+            dependencies: ["SwiftKueryMySQL"]
         )
     ]
 )
-
