@@ -15,7 +15,7 @@ else
         export DEBIAN_FRONTEND="noninteractive"
         echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
         sudo apt-get update -y
-        sudo -E apt-get install pkg-config
+        sudo -E apt-get install -y pkg-config
         sudo -E apt-get install -q -y mysql-server
         sudo -E apt-get install -y libmysqlclient-dev
         service mysql start
