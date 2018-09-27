@@ -15,10 +15,13 @@ else
         export DEBIAN_FRONTEND="noninteractive"
         echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
         sudo apt-get update -y
+        sudo -E apt-get install pkg-config
         sudo -E apt-get install -q -y mysql-server
-        sudo apt-get install -y libmysqlclient-dev
+        sudo -E apt-get install -y libmysqlclient-dev
         service mysql start
         mysql --version
+        echo "** Finding mysqlclient.pc **"
+        find / -name mysqlclient.pc
     fi
 
     mysql_upgrade -uroot || echo "No need to upgrade"
