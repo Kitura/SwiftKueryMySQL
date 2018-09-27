@@ -12,6 +12,7 @@ else
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         mysql --version || { brew update && brew install mysql@5.7 && brew link mysql@5.7 --force && mysql.server start && mysql --version; }
     else
+        echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
         sudo apt-get update -y
         sudo apt-get install -q -y mysql-server
         sudo apt-get install -y libmysqlclient-dev
