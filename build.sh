@@ -12,13 +12,6 @@ else
     if [[ $TRAVIS_OS_NAME == "osx" ]]; then
         mysql --version || { brew update && brew install mysql@5.7 && brew link mysql@5.7 --force && mysql.server start && mysql --version; }
     else
-        export DEBIAN_FRONTEND=noninteractive
-        cd /tmp
-        wget https://dev.mysql.com/get/mysql-apt-config_0.8.10-1_all.deb
-        cd -
-        sudo echo mysql-apt-config mysql-apt-config/select-server select mysql-8.0 | debconf-set-selections
-        sudo dpkg -i /tmp/mysql-apt-config_0.8.10-1_all.deb
-        sudo echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
         sudo apt-get update -y
         sudo apt-get install -q -y mysql-server
         sudo apt-get install -y libmysqlclient-dev
