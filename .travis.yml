@@ -26,6 +26,18 @@ matrix:
       env:
         - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
       sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=8
+      sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=8
+      sudo: required
     - os: osx
       osx_image: xcode9.2
       sudo: required
@@ -41,6 +53,21 @@ matrix:
       sudo: required
       env: 
         - SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
+    - os: osx
+      osx_image: xcode9.2
+      sudo: required
+      env:
+        - SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=8
+    - os: osx
+      osx_image: xcode9.4
+      sudo: required
+      env:
+        - SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=8
+    - os: osx
+      osx_image: xcode10
+      sudo: required
+      env:
+        - SWIFT_SNAPSHOT=4.2 MYSQL_VER=8
 
 script:
   - ./build.sh
