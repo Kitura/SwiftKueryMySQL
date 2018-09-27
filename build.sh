@@ -16,12 +16,12 @@ else
         cd /tmp
         wget https://dev.mysql.com/get/mysql-apt-config_0.8.10-1_all.deb
         cd -
-        echo mysql-apt-config mysql-apt-config/select-server select mysql-8.0 | debconf-set-selections
-        dpkg -i /tmp/mysql-apt-config_0.8.10-1_all.deb
-        echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
-        apt-get update -y
-        apt-get install -q -y mysql-server
-        apt-get install -y libmysqlclient-dev
+        sudo echo mysql-apt-config mysql-apt-config/select-server select mysql-8.0 | debconf-set-selections
+        sudo dpkg -i /tmp/mysql-apt-config_0.8.10-1_all.deb
+        sudo echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
+        sudo apt-get update -y
+        sudo apt-get install -q -y mysql-server
+        sudo apt-get install -y libmysqlclient-dev
         service mysql start
         mysql --version
     fi
