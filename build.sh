@@ -5,7 +5,7 @@ set -o verbose
 if [ -n "${DOCKER_IMAGE}" ]; then
 
     docker pull ${DOCKER_IMAGE}
-    docker run --env SWIFT_SNAPSHOT MYSQL_VER -v ${TRAVIS_BUILD_DIR}:${TRAVIS_BUILD_DIR} ${DOCKER_IMAGE} /bin/bash -c "apt-get update && apt-get install -y apt-utils debconf-utils dialog git sudo lsb-release wget libxml2 && cd $TRAVIS_BUILD_DIR && ./build.sh"
+    docker run --env SWIFT_SNAPSHOT --env MYSQL_VER -v ${TRAVIS_BUILD_DIR}:${TRAVIS_BUILD_DIR} ${DOCKER_IMAGE} /bin/bash -c "apt-get update && apt-get install -y apt-utils debconf-utils dialog git sudo lsb-release wget libxml2 && cd $TRAVIS_BUILD_DIR && ./build.sh"
 
 else
 
