@@ -18,7 +18,31 @@ matrix:
       dist: trusty
       services: docker
       env:
-        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=5
+        - DOCKER_IMAGE=ubuntu:14.04 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5
+      sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:14.04 SWIFT_SNAPSHOT=4.1.3 MYSQL_VER=5
+      sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:14.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
+      sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5
+      sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.1.3 MYSQL_VER=5
       sudo: required
     - os: linux
       dist: trusty
@@ -27,6 +51,12 @@ matrix:
         - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
       sudo: required
     # Currently mysql 8 does not install cleanly on ubuntu 16.04
+    #- os: linux
+    #  dist: trusty
+    #  services: docker
+    #  env:
+    #    - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=8
+    #  sudo: required
     #- os: linux
     #  dist: trusty
     #  services: docker
@@ -54,7 +84,7 @@ matrix:
     - os: osx
       osx_image: xcode9.2
       sudo: required
-      env: 
+      env:
         - SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5
     - os: osx
       osx_image: xcode9.4
@@ -64,7 +94,7 @@ matrix:
     - os: osx
       osx_image: xcode10
       sudo: required
-      env: 
+      env:
         - SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
     - os: osx
       osx_image: xcode9.2
