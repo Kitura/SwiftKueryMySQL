@@ -26,17 +26,30 @@ matrix:
       env:
         - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
       sudo: required
+    # Currently mysql 8 does not install cleanly on ubuntu 16.04
+    #- os: linux
+    #  dist: trusty
+    #  services: docker
+    #  env:
+    #    - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=8
+    #  sudo: required
+    #- os: linux
+    #  dist: trusty
+    #  services: docker
+    #  env:
+    #    - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=8
+    #  sudo: required
     - os: linux
       dist: trusty
       services: docker
       env:
-        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=8
+        - DOCKER_IMAGE=ubuntu:18.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=5
       sudo: required
     - os: linux
       dist: trusty
       services: docker
       env:
-        - DOCKER_IMAGE=ubuntu:16.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=8
+        - DOCKER_IMAGE=ubuntu:18.04 SWIFT_SNAPSHOT=4.2 MYSQL_VER=8
       sudo: required
     - os: osx
       osx_image: xcode9.2
