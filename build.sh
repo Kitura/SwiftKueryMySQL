@@ -5,7 +5,7 @@ set -o verbose
 if [ -n "${DOCKER_IMAGE}" ]; then
 
     docker pull ${DOCKER_IMAGE}
-    docker run --env SWIFT_SNAPSHOT --env MYSQL_VER -v ${TRAVIS_BUILD_DIR}:${TRAVIS_BUILD_DIR} ${DOCKER_IMAGE} /bin/bash -c "apt-get update && apt-get install -y apt-utils debconf-utils dialog git sudo lsb-release wget libxml2 && cd $TRAVIS_BUILD_DIR && ./build.sh"
+    docker run --env CUSTOM_BUILD_SCRIPT --env SWIFT_SNAPSHOT --env MYSQL_VER -v ${TRAVIS_BUILD_DIR}:${TRAVIS_BUILD_DIR} ${DOCKER_IMAGE} /bin/bash -c "apt-get update && apt-get install -y apt-utils debconf-utils dialog git sudo lsb-release wget libxml2 && cd $TRAVIS_BUILD_DIR && ./build.sh"
 
 else
 
@@ -40,6 +40,6 @@ else
     mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
     mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 
-    git clone https://github.com/IBM-Swift/Package-Builder.git
+    git clone --single-branch -b configurable_script https://github.com/IBM-Swift/Package-Builder.git
     ./Package-Builder/build-package.sh -projectDir $(pwd)
 fi

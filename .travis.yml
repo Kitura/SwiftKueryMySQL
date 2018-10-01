@@ -18,7 +18,7 @@ matrix:
       dist: trusty
       services: docker
       env:
-        - DOCKER_IMAGE=ubuntu:14.04 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5
+        - DOCKER_IMAGE=ubuntu:14.04 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5 CUSTOM_BUILD_SCRIPT=.myTestScript
       sudo: required
     - os: linux
       dist: trusty
