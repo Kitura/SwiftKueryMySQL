@@ -40,6 +40,6 @@ else
     mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
     mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 
-    git clone --single-branch -b configurable_script https://github.com/IBM-Swift/Package-Builder.git
+    git clone --single-branch -b enable_verbose https://github.com/IBM-Swift/Package-Builder.git
     ./Package-Builder/build-package.sh -projectDir $(pwd)
 fi
