@@ -111,5 +111,15 @@ connection.connect() { error in
 
 View the [Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Kuery framework.
 
+## Deployment via Cloud Foundry
+
+If you include SwiftKueryMySQL as a dependancy in an application you are deploying using the Cloud Foundry Swift buildpack then you will need to specify some additional flags when compiling your application. This is best achieved by adding a file to the root of your application named .swift-build-linux-options with the content:
+
+```
+$ cat .swift-build-options-linux 
+-Xcc -I/usr/include/mysql/
+```
+These flags tell the compiler where to find the MySQL header files required to build the CMySQL library.
+
 ## License
 This library is licensed under Apache 2.0. Full license text is available in [LICENSE](LICENSE.txt).
