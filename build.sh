@@ -20,6 +20,7 @@ else
         if [[ $MYSQL_VER == 5 ]]; then
             mysql --version || { apt-get update && apt-get install -y pkg-config mysql-server libmysqlclient-dev && service mysql start && mysql --version; }
         else
+            sudo -E apt-get install -y gnupg
             cd /tmp
             wget https://dev.mysql.com/get/mysql-apt-config_0.8.10-1_all.deb
             cd -
