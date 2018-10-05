@@ -21,7 +21,7 @@ mysql.server start
 ```
 Other install options: https://dev.mysql.com/doc/refman/5.7/en/osx-installation.html
 
-On macOS, add `-Xlinker -L/usr/local/lib` to swift commands to point the linker to the MySQL library location.
+On macOS, regular swift commands can be used for build and test. Use the example command below for generating an Xcode project.
 For example,
 ```
 swift build
@@ -40,12 +40,7 @@ sudo service mysql start
 ```
 More details: https://dev.mysql.com/doc/refman/5.7/en/linux-installation.html
 
-On linux, regular swift commands should work fine:
-```
-swift build
-swift test
-```
-If running on Ubuntu 14.04 you will need to add additional flags:
+On linux, add ` -Xcc -I/usr/include/mysql` to swift commands to point the compiler at the mysql header files:
 ```
 swift build -Xcc -I/usr/include/mysql/
 swift test -Xcc -I/usr/include/mysql/
