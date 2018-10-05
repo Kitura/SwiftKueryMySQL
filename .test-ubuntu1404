@@ -1,1 +1,1 @@
-swift test -Xlinker -L/usr/lib -Xcc -I/usr/include/ -Xcc -I/usr/include/mysql/
+swift test -Xcc -I/usr/include/mysql/

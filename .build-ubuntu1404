@@ -1,1 +1,1 @@
-swift build -Xlinker -L/usr/lib -Xcc -I/usr/include/ -Xcc -I/usr/include/mysql/
+swift build -Xcc -I/usr/include/mysql/
