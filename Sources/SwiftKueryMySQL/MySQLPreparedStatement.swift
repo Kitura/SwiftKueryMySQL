@@ -100,7 +100,11 @@ public class MySQLPreparedStatement: PreparedStatement {
 
             do {
               if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
-                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS id",mysql: self.mysql).execute(onCompletion: onCompletion)
+                guard let idColumn = insertQuery.table.columns.first(where: {$0.isPrimaryKey && $0.autoIncrement}) else {
+                  throw QueryError.syntaxError("Could not retrieve ID Column in order to return the ID value")
+                }
+
+                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)", mysql: self.mysql).execute(onCompletion: onCompletion)
                 return
               }
             } catch {
