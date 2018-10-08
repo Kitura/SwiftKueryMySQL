@@ -18,13 +18,9 @@ import XCTest
 import Foundation
 import SwiftKuery
 
-@testable import SwiftKueryMySQL
+import CMySQL
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+@testable import SwiftKueryMySQL
 
 class TestColumnTypes: MySQLTest {
 

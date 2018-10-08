@@ -17,11 +17,7 @@
 import SwiftKuery
 import Foundation
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import CMySQL
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
@@ -56,7 +52,7 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr[i] = binds[i]
         }
 
-        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == 0 else {
+        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == mysql_false() else {
             throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
@@ -174,7 +170,7 @@ public class MySQLResultFetcher: ResultFetcher {
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
+        bind.is_unsigned = mysql_false()
 
         #if swift(>=4.1)
         bind.buffer = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: 1)
@@ -183,8 +179,8 @@ public class MySQLResultFetcher: ResultFetcher {
         #endif
         
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.is_null = UnsafeMutablePointer<mysql_bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<mysql_bool>.allocate(capacity: 1)
 
         return bind
     }
@@ -233,7 +229,7 @@ public class MySQLResultFetcher: ResultFetcher {
                 continue
             }
 
-            guard bind.is_null.pointee == 0 else {
+            guard bind.is_null.pointee == mysql_false() else {
                 row.append(nil)
                 continue
             }
