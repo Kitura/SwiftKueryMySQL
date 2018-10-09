@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017, 2018
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@
 import Foundation
 import SwiftKuery
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import CMySQL
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
 /// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
@@ -60,7 +56,7 @@ public class MySQLConnection: Connection {
     /// The `QueryBuilder` with MySQL specific substitutions.
     public let queryBuilder: QueryBuilder = {
         let queryBuilder = QueryBuilder(addNumbersToParameters: false,
-                                        anyOnSubquerySupported: true,
+                                        anyOnSubquerySupported: true, columnBuilder: MySQLColumnBuilder(),
                                         dropIndexRequiresOnTableName: true,
                                         dateFormatter: MySQLConnection.queryBuilderDateFormatter)
 
@@ -786,3 +782,84 @@ public class MySQLConnection: Connection {
         return "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
     }
 }
+
+class MySQLColumnBuilder: ColumnCreator {
+    func buildColumn(for column: Column, using queryBuilder: QueryBuilder) -> String? {
+        guard let type = column.type else {
+            return nil
+        }
+
+        var result = column.name
+        let identifierQuoteCharacter = queryBuilder.substitutions[QueryBuilder.QuerySubstitutionNames.identifierQuoteCharacter.rawValue]
+        if !result.hasPrefix(identifierQuoteCharacter) {
+            result = identifierQuoteCharacter + result + identifierQuoteCharacter + " "
+        }
+
+        var typeString = type.create(queryBuilder: queryBuilder)
+        if let length = column.length {
+            typeString += "(\(length))"
+        }
+        if column.autoIncrement && typeCanBeAutoIncrement(typeString) {
+            result += typeString + " AUTO_INCREMENT"
+        } else {
+            result += typeString
+        }
+
+        if column.isPrimaryKey {
+            result += " PRIMARY KEY"
+        }
+        if column.isNotNullable {
+            result += " NOT NULL"
+        }
+        if column.isUnique {
+            result += " UNIQUE"
+        }
+        if let defaultValue = column.defaultValue {
+            var packedType: String
+            do {
+                packedType = try packType(defaultValue, queryBuilder: queryBuilder)
+            } catch {
+                return nil
+            }
+            result += " DEFAULT " + packedType
+        }
+        if let checkExpression = column.checkExpression {
+            result += checkExpression.contains(column.name) ? " CHECK (" + checkExpression.replacingOccurrences(of: column.name, with: "\"\(column.name)\"") + ")" : " CHECK (" + checkExpression + ")"
+        }
+        if let collate = column.collate {
+            result += " COLLATE \"" + collate + "\""
+        }
+        return result
+    }
+
+    func packType(_ item: Any, queryBuilder: QueryBuilder) throws -> String {
+        switch item {
+        case let val as String:
+            return "'\(val)'"
+        case let val as Bool:
+            return val ? queryBuilder.substitutions[QueryBuilder.QuerySubstitutionNames.booleanTrue.rawValue]
+                : queryBuilder.substitutions[QueryBuilder.QuerySubstitutionNames.booleanFalse.rawValue]
+        case let val as Parameter:
+            return try val.build(queryBuilder: queryBuilder)
+        case let value as Date:
+            if let dateFormatter = queryBuilder.dateFormatter {
+                return dateFormatter.string(from: value)
+            }
+            return "'\(String(describing: value))'"
+        default:
+            return String(describing: item)
+        }
+    }
+
+    func typeCanBeAutoIncrement(_ type: String) -> Bool {
+        switch type {
+        case  "integer", "smallint", "tinyint", "mediumint", "bigint":
+            return true
+        case "float", "double":
+            return true
+        default:
+            return false
+        }
+    }
+}
+
