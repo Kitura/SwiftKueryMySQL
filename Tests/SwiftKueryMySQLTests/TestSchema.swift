@@ -416,30 +416,6 @@ class TestSchema: XCTestCase {
     }
 
     func testAutoIncrement() {
-        performTest(asyncTasks: { connection in
-            let t1 = AutoIncrement1()
-            let t2 = AutoIncrement2()
-            let t3 = AutoIncrement3()
-
-            cleanUp(table: t1.tableName, connection: connection) { _ in }
-            cleanUp(table: t2.tableName, connection: connection) { _ in }
-            cleanUp(table: t3.tableName, connection: connection) { _ in }
-
-            t1.create(connection: connection) { result in
-                XCTAssertEqual(result.success, true, "CREATE TABLE failed for \(t1.tableName)")
-            }
-
-            t2.create(connection: connection) { result in
-                XCTAssertEqual(result.success, false, "CREATE TABLE non primary key auto increment column didn't fail")
-            }
-
-            t3.create(connection: connection) { result in
-                XCTAssertEqual(result.success, false, "CREATE TABLE non integer auto increment column didn't fail")
-            }
-        })
-    }
-
-/*    func testAutoIncrement() {
         let t1 = AutoIncrement1()
         let t2 = AutoIncrement2()
         let t3 = AutoIncrement3()
@@ -471,5 +447,5 @@ class TestSchema: XCTestCase {
             }
             expectation.fulfill()
         })
-    }*/
+    }
 }
