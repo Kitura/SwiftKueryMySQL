@@ -16,6 +16,7 @@
 
 import XCTest
 import SwiftKuery
+import Dispatch
 
 #if os(Linux)
 let tableAlias = "tableAliasLinux"
