@@ -16,6 +16,7 @@
 
 import XCTest
 import Foundation
+import Dispatch
 import SwiftKuery
 
 import CMySQL
