@@ -15,6 +15,7 @@
  */
 
 import XCTest
+import Dispatch
 import SwiftKuery
 
 #if os(Linux)
