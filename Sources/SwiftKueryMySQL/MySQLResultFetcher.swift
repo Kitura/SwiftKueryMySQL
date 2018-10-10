@@ -17,11 +17,7 @@
 import SwiftKuery
 import Foundation
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import CMySQL
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
@@ -56,7 +52,7 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr[i] = binds[i]
         }
 
-        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == 0 else {
+        guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == mysql_false() else {
             throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
@@ -83,14 +79,26 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if let binds = binds {
             for bind in binds {
+                
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                bind.length.deallocate()
+                bind.is_null.deallocate()
+                bind.error.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
                 bind.length.deallocate(capacity: 1)
                 bind.is_null.deallocate(capacity: 1)
                 bind.error.deallocate(capacity: 1)
+                #endif
             }
 
             if let bindPtr = bindPtr {
+                #if swift(>=4.1)
+                bindPtr.deallocate()
+                #else
                 bindPtr.deallocate(capacity: binds.count)
+                #endif
             }
         }
 
@@ -102,12 +110,23 @@ public class MySQLResultFetcher: ResultFetcher {
             self.bindPtr = nil
 
             for bind in binds {
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                bind.length.deallocate()
+                bind.is_null.deallocate()
+                bind.error.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
                 bind.length.deallocate(capacity: 1)
                 bind.is_null.deallocate(capacity: 1)
                 bind.error.deallocate(capacity: 1)
+                #endif
             }
+            #if swift(>=4.1)
+            bindPtr.deallocate()
+            #else
             bindPtr.deallocate(capacity: binds.count)
+            #endif
 
             preparedStatement.release()
         }
@@ -151,12 +170,17 @@ public class MySQLResultFetcher: ResultFetcher {
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = 0
+        bind.is_unsigned = mysql_false()
 
+        #if swift(>=4.1)
+        bind.buffer = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: 1)
+        #else
         bind.buffer = UnsafeMutableRawPointer.allocate(bytes: size, alignedTo: 1)
+        #endif
+        
         bind.length = UnsafeMutablePointer<UInt>.allocate(capacity: 1)
-        bind.is_null = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
-        bind.error = UnsafeMutablePointer<my_bool>.allocate(capacity: 1)
+        bind.is_null = UnsafeMutablePointer<mysql_bool>.allocate(capacity: 1)
+        bind.error = UnsafeMutablePointer<mysql_bool>.allocate(capacity: 1)
 
         return bind
     }
@@ -205,7 +229,7 @@ public class MySQLResultFetcher: ResultFetcher {
                 continue
             }
 
-            guard bind.is_null.pointee == 0 else {
+            guard bind.is_null.pointee == mysql_false() else {
                 row.append(nil)
                 continue
             }

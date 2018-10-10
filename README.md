@@ -25,7 +25,7 @@
 [MySQL](https://dev.mysql.com/) plugin for the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.
 
 ## Swift version
-The latest version of SwiftKueryMySQL requires **Swift 4.0**. You can download this version of the Swift binaries by following this [link](https://swift.org/download/). Compatibility with other Swift versions is not guaranteed.
+The latest version of SwiftKueryMySQL requires **Swift 4.0 or newer**. You can download this version of the Swift binaries by following this [link](https://swift.org/download/). Compatibility with other Swift versions is not guaranteed.
 
 ## Install MySQL
 
@@ -35,25 +35,28 @@ brew install mysql
 mysql.server start
 ```
 
-On macOS, add `-Xlinker -L/usr/local/lib` to Swift commands to point the linker to the MySQL library location.
-For example,
-```
-swift build -Xlinker -L/usr/local/lib
-swift test -Xlinker -L/usr/local/lib
-swift package -Xlinker -L/usr/local/lib generate-xcodeproj
-```
-
 #### Linux
-Download the release package for your Linux distribution from http://dev.mysql.com/downloads/repo/apt/
-For example: `wget https://repo.mysql.com//mysql-apt-config_0.8.10-1_all.deb`
 ```
-sudo dpkg -i mysql-apt-config_0.8.10-1_all.deb
 sudo apt-get update
 sudo apt-get install mysql-server libmysqlclient-dev
 sudo service mysql start
 ```
 
 ## Usage
+
+On macOS, regular swift commands can be used for build and test. Use the example command below for generating an Xcode project.
+
+For example,
+```
+swift build
+swift test
+swift package generate-xcodeproj --xcconfig-overrides Config.xcconfig
+```
+On linux, add ` -Xcc -I/usr/include/mysql` to swift commands to point the compiler at the mysql header files:
+```
+swift build -Xcc -I/usr/include/mysql/
+swift test -Xcc -I/usr/include/mysql/
+```
 
 #### Add dependencies
 
@@ -146,6 +149,16 @@ For more information visit our [API reference](https://ibm-swift.github.io/Swift
 ## Community
 
 We love to talk server-side Swift, and Kitura. Join our [Slack](http://swift-at-ibm-slack.mybluemix.net/) to meet the team!
+
+## Deployment via Cloud Foundry
+
+If you include SwiftKueryMySQL as a dependancy in an application you are deploying using the Cloud Foundry Swift buildpack then you will need to specify some additional flags when compiling your application. This is best achieved by adding a file to the root of your application named .swift-build-linux-options with the content:
+
+```
+$ cat .swift-build-options-linux 
+-Xcc -I/usr/include/mysql/
+```
+These flags tell the compiler where to find the MySQL header files required to build the CMySQL library.
 
 ## License
 This library is licensed under Apache 2.0. Full license text is available in [LICENSE](https://github.com/IBM-Swift/SwiftKueryMySQL/blob/master/LICENSE.txt).

@@ -17,11 +17,7 @@
 import Foundation
 import SwiftKuery
 
-#if os(Linux)
-    import CmySQLlinux
-#else
-    import CmySQLosx
-#endif
+import CMySQL
 
 /// MySQL implementation for prepared statements.
 public class MySQLPreparedStatement: PreparedStatement {
@@ -104,7 +100,11 @@ public class MySQLPreparedStatement: PreparedStatement {
 
             do {
               if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
-                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS id",mysql: self.mysql).execute(onCompletion: onCompletion)
+                guard let idColumn = insertQuery.table.columns.first(where: {$0.isPrimaryKey && $0.autoIncrement}) else {
+                  throw QueryError.syntaxError("Could not retrieve ID Column in order to return the ID value")
+                }
+
+                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)", mysql: self.mysql).execute(onCompletion: onCompletion)
                 return
               }
             } catch {
@@ -171,7 +171,7 @@ public class MySQLPreparedStatement: PreparedStatement {
             }
         }
 
-        guard mysql_stmt_bind_param(statement, bindPtr) == 0 else {
+        guard mysql_stmt_bind_param(statement, bindPtr) == mysql_false() else {
             throw QueryError.databaseError(MySQLConnection.getError(statement!))
         }
     }
@@ -185,33 +185,49 @@ public class MySQLPreparedStatement: PreparedStatement {
 
         for bind in binds {
             if bind.buffer != nil {
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                #endif
             }
             if bind.length != nil {
+                #if swift(>=4.1)
+                bind.length.deallocate()
+                #else
                 bind.length.deallocate(capacity: 1)
+                #endif
             }
             if bind.is_null != nil {
+                #if swift(>=4.1)
+                bind.is_null.deallocate()
+                #else
                 bind.is_null.deallocate(capacity: 1)
+                #endif
             }
         }
+        #if swift(>=4.1)
+        bindPtr.deallocate()
+        #else
         bindPtr.deallocate(capacity: bindsCapacity)
+        #endif
         binds.removeAll()
     }
 
     private func setBind(_ bind: inout MYSQL_BIND, _ parameter: Any?, _ column: Column?) {
         if bind.is_null == nil {
-            bind.is_null = UnsafeMutablePointer<Int8>.allocate(capacity: 1)
+            bind.is_null = UnsafeMutablePointer<mysql_bool>.allocate(capacity: 1)
         }
 
         guard let parameter = parameter else {
             bind.buffer_type = MYSQL_TYPE_NULL
-            bind.is_null.initialize(to: 1)
+            bind.is_null.initialize(to: mysql_true())
             return
         }
 
         bind.buffer_type = getType(parameter: parameter)
-        bind.is_null.initialize(to: 0)
-        bind.is_unsigned = 0
+        bind.is_null.initialize(to: mysql_false())
+        bind.is_unsigned = mysql_false()
 
         switch parameter {
         case let string as String:
@@ -254,22 +270,22 @@ public class MySQLPreparedStatement: PreparedStatement {
             initialize(int, &bind)
         case let uint as UInt:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         case let uint as UInt8:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         case let uint as UInt16:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         case let uint as UInt32:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         case let uint as UInt64:
             initialize(uint, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         case let unicodeScalar as UnicodeScalar:
             initialize(unicodeScalar, &bind)
-            bind.is_unsigned = 1
+            bind.is_unsigned = mysql_true()
         default:
             print("WARNING: Unhandled parameter \(parameter) (type: \(type(of: parameter))). Will attempt to convert it to a String")
             initialize(string: String(describing: parameter), &bind)
@@ -291,7 +307,11 @@ public class MySQLPreparedStatement: PreparedStatement {
         } else {
             if bind.buffer != nil {
                 // deallocate existing smaller buffer
+                #if swift(>=4.1)
+                bind.buffer.deallocate()
+                #else
                 bind.buffer.deallocate(bytes: Int(bind.buffer_length), alignedTo: 1)
+                #endif
             }
 
             typedBuffer = UnsafeMutablePointer<T>.allocate(capacity: capacity)
