@@ -38,7 +38,7 @@ mysql.server start
 #### Linux
 ```
 sudo apt-get update
-sudo apt-get install mysql-server libmysqlclient-dev
+sudo apt-get install mysql-server libmysqlclient-dev pkg-config
 sudo service mysql start
 ```
 
@@ -52,7 +52,9 @@ swift build
 swift test
 swift package generate-xcodeproj --xcconfig-overrides Config.xcconfig
 ```
-On linux, add ` -Xcc -I/usr/include/mysql` to swift commands to point the compiler at the mysql header files:
+On linux standard swift commands will also work provided your mysql installation is version 5.7 or greater. If using an earlier version of mysql add ` -Xcc -I/usr/include/mysql` to swift commands to point the compiler at the mysql header files:
+
+For example,
 ```
 swift build -Xcc -I/usr/include/mysql/
 swift test -Xcc -I/usr/include/mysql/
