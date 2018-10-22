@@ -124,6 +124,21 @@ class TestParameters: XCTestCase {
         })
     }
 
+    func executePreparedStatementWithParameterArray(statement: PreparedStatement, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
+        let iteration = params.count - index
+        connection.execute(preparedStatement: statement, parameters: params[iteration]) {result in
+            if result.asError != nil {
+                onCompletion(result)
+                return
+            }
+            if index >= 0 {
+                self.executePreparedStatementWithParameterArray(statement: statement, count: index - 1, params: params, connection: connection, onCompletion: onCompletion)
+            } else {
+                onCompletion(result)
+            }
+        }
+    }
+
     func testMultipleParameterSets() {
         let t = MyTable()
 
@@ -146,39 +161,38 @@ class TestParameters: XCTestCase {
                     let i1 = "insert into " + t.tableName + " values(?, ?)"
                     let parametersArray = [["apple", 10], ["apricot", 3], ["banana", -8]]
 
-                    do {
-                        var error: Error? = nil
-                        let preparedStatement = try connection.prepareStatement(i1)
-                        defer { connection.release(preparedStatement: preparedStatement) { _ in } }
-
-                        for parameters in parametersArray {
-                            let result = connection.executeSync(preparedStatement: preparedStatement, parameters: parameters)
-                            error = result.asError
-                            XCTAssertEqual(result.success, true, "INSERT failed")
-                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-                            if error != nil {
-                                break
+                    connection.prepareStatement(i1) { stmt, error in
+                        guard let preparedStatement = stmt else {
+                            guard let error = error else {
+                                XCTFail("Error in INSERT")
+                                return
                             }
+                            XCTFail("Error in INSERT: \(error.localizedDescription)")
+                            return
                         }
-                    } catch {
-                        XCTFail("Error in INSERT: \(error)")
-                    }
+                        self.executePreparedStatementWithParameterArray(statement: preparedStatement, count: parametersArray.count, params: parametersArray, connection: connection) { result in
+                            if let error = result.asError {
+                                connection.release(preparedStatement: preparedStatement) { _ in }
+                                XCTFail("Error in INSERT: \(error.localizedDescription)")
+                            }
 
-                    let s1 = Select(from: t)
-                    executeQuery(query: s1, connection: connection) { result, rows in
-                        XCTAssertEqual(result.success, true, "SELECT failed")
-                        XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
-                        XCTAssertNotNil(rows, "SELECT returned no rows")
-                        XCTAssertEqual(rows?.count, 3, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 3")
-                        XCTAssertEqual(rows?[0][0] as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[0][0])) instead of 'apple'")
-                        XCTAssertEqual(rows?[1][0] as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[1][0])) instead of 'apricot'")
-                        XCTAssertEqual(rows?[2][0] as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[2][0])) instead of 'banana'")
-                        XCTAssertEqual(rows?[0][1] as? Int32, 10, "Wrong value in row 0 column 0: \(String(describing: rows?[0][1])) instead of 10")
-                        XCTAssertEqual(rows?[1][1] as? Int32, 3, "Wrong value in row 0 column 0: \(String(describing: rows?[1][1])) instead of 3")
-                        XCTAssertEqual(rows?[2][1] as? Int32, -8, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of -8")
+                            let s1 = Select(from: t)
+                            executeQuery(query: s1, connection: connection) { result, rows in
+                                XCTAssertEqual(result.success, true, "SELECT failed")
+                                XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
+                                XCTAssertNotNil(rows, "SELECT returned no rows")
+                                XCTAssertEqual(rows?.count, 3, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 3")
+                                XCTAssertEqual(rows?[0][0] as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[0][0])) instead of 'apple'")
+                                XCTAssertEqual(rows?[1][0] as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[1][0])) instead of 'apricot'")
+                                XCTAssertEqual(rows?[2][0] as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[2][0])) instead of 'banana'")
+                                XCTAssertEqual(rows?[0][1] as? Int32, 10, "Wrong value in row 0 column 0: \(String(describing: rows?[0][1])) instead of 10")
+                                XCTAssertEqual(rows?[1][1] as? Int32, 3, "Wrong value in row 0 column 0: \(String(describing: rows?[1][1])) instead of 3")
+                                XCTAssertEqual(rows?[2][1] as? Int32, -8, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of -8")
 
-                        cleanUp(table: t.tableName, connection: connection) { _ in
-                            semaphore.signal()
+                                cleanUp(table: t.tableName, connection: connection) { _ in
+                                    semaphore.signal()
+                                }
+                            }
                         }
                     }
                 }
