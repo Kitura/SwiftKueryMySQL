@@ -30,13 +30,9 @@ class TestTimingWindows: XCTestCase {
     static var allTests: [(String, (TestTimingWindows) -> () throws -> Void)] {
         return [
             ("testExecutePassingQueryWithNoParameters", testExecutePassingQueryWithNoParameters),
-            ("testExecutePassingQueryWithNoParametersSync", testExecutePassingQueryWithNoParametersSync),
             ("testExecutePassingQueryWithParameters", testExecutePassingQueryWithParameters),
-            ("testExecutePassingQueryWithParametersSync", testExecutePassingQueryWithParametersSync),
             ("testExecutePassingRawQueryWithNoParameters", testExecutePassingRawQueryWithNoParameters),
-            ("testExecutePassingRawQueryWithNoParametersSync",testExecutePassingRawQueryWithNoParametersSync),
             ("testExecutePassingRawQueryWithParameters",testExecutePassingRawQueryWithParameters),
-            ("testExecutePassingRawQueryWithParametersSync",testExecutePassingRawQueryWithParametersSync)
         ]
     }
 
@@ -98,45 +94,6 @@ class TestTimingWindows: XCTestCase {
         }
     }
 
-    func testExecutePassingQueryWithNoParametersSync() {
-        let t = MyTable()
-
-        let pool = CommonUtils.sharedInstance.getConnectionPool()
-        performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
-
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                    }
-
-                    let insertCount = 1000
-                    let query = Insert(into: t, values: "apple", 10)
-                    var error: Error? = nil
-                    for _ in 1...insertCount {
-                        let result = connection.executeSync(query: query)
-                        error = result.asError
-                        if error != nil {
-                            break
-                        }
-                    }
-                    if let error = error {
-                        XCTFail("Error in INSERT: \(error)")
-                    }
-                    semaphore.signal()
-                } // t.create
-            } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
-        })
-    }
-
     // public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
     func testExecutePassingQueryWithParameters() {
         let t = MyTable()
@@ -186,45 +143,6 @@ class TestTimingWindows: XCTestCase {
                 onCompletion(result)
             }
         }
-    }
-
-    func testExecutePassingQueryWithParametersSync() {
-        let t = MyTable()
-
-        let pool = CommonUtils.sharedInstance.getConnectionPool()
-        performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
-
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                    }
-
-                    let insertCount = 1000
-                    let query = Insert(into: t, values: Parameter(), Parameter())
-                    var error: Error? = nil
-                    for _ in 1...insertCount {
-                        let result = connection.executeSync(query: query, parameters: ["apple", 10])
-                        error = result.asError
-                        if error != nil {
-                            break
-                        }
-                    }
-                    if let error = error {
-                        XCTFail("Error in INSERT: \(error)")
-                    }
-                    semaphore.signal()
-                } // t.create
-            } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
-        })
     }
 
     // public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
@@ -278,45 +196,6 @@ class TestTimingWindows: XCTestCase {
         }
     }
 
-    func testExecutePassingRawQueryWithNoParametersSync() {
-        let t = MyTable()
-
-        let pool = CommonUtils.sharedInstance.getConnectionPool()
-        performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
-
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                    }
-
-                    let insertCount = 1000
-                    let raw = "insert into " + t.tableName + " values(\"apple\", 10)"
-                    var error: Error? = nil
-                    for _ in 1...insertCount {
-                        let result = connection.executeSync(raw)
-                        error = result.asError
-                        if error != nil {
-                            break
-                        }
-                    }
-                    if let error = error {
-                        XCTFail("Error in INSERT: \(error)")
-                    }
-                    semaphore.signal()
-                } // t.create
-            } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
-        })
-    }
-
     // public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
     func testExecutePassingRawQueryWithParameters() {
         let t = MyTable()
@@ -366,44 +245,5 @@ class TestTimingWindows: XCTestCase {
                 onCompletion(result)
             }
         }
-    }
-
-    func testExecutePassingRawQueryWithParametersSync() {
-        let t = MyTable()
-
-        let pool = CommonUtils.sharedInstance.getConnectionPool()
-        performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
-
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                    }
-
-                    let insertCount = 1000
-                    let raw = "insert into " + t.tableName + " values(?, ?)"
-                    var error: Error? = nil
-                    for _ in 1...insertCount {
-                        let result = connection.executeSync(raw, parameters: ["apple", 10])
-                        error = result.asError
-                        if error != nil {
-                            break
-                        }
-                    }
-                    if let error = error {
-                        XCTFail("Error in INSERT: \(error)")
-                    }
-                    semaphore.signal()
-                } // t.create
-            } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
-        })
     }
 }
