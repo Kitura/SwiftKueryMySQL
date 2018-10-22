@@ -21,124 +21,41 @@ import CMySQL
 
 /// MySQL implementation for prepared statements.
 public class MySQLPreparedStatement: PreparedStatement {
-    private(set) var statement: UnsafeMutablePointer<MYSQL_STMT>?
-    private let query: Query?
+    internal(set) var statement: UnsafeMutablePointer<MYSQL_STMT>?
+    internal let query: Query?
 
     private var binds = [MYSQL_BIND]()
-    private var bindsCapacity = 0
-    private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
+    internal var bindsCapacity = 0
+    internal var bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil
     private var mysql: UnsafeMutablePointer<MYSQL>?
 
-    init(_ raw: String, query: Query? = nil, mysql: UnsafeMutablePointer<MYSQL>?) throws {
-        guard let mysql = mysql else {
-            throw QueryError.connection("Not connected, call connect() before execute()")
-        }
-
-        guard let statement = mysql_stmt_init(mysql) else {
-            throw QueryError.connection(MySQLConnection.getError(mysql))
-        }
-
-        guard mysql_stmt_prepare(statement, raw, UInt(raw.utf8.count)) == 0 else {
-            defer {
-                mysql_stmt_close(statement)
-            }
-            throw QueryError.syntaxError(MySQLConnection.getError(statement))
-        }
-
+    init(query: Query? = nil, mysql: UnsafeMutablePointer<MYSQL>?, statement: UnsafeMutablePointer<MYSQL_STMT>?) {
         self.mysql = mysql
         self.statement = statement
         self.query = query
     }
 
     deinit {
-        release()
+        release { _ in
+            return
+        }
     }
 
-    func release() {
+    func release(onCompletion: @escaping ((QueryResult) -> ())) {
         deallocateBinds()
 
         if let statement = self.statement {
             self.statement = nil
             mysql_stmt_close(statement)
         }
+        onCompletion(.successNoData)
     }
 
-    func execute(parameters: [Any?]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
-        guard let statement = self.statement else {
-            onCompletion(.error(QueryError.connection("PreparedStatement release() has already been called.")))
-            return
-        }
-
-        if let parameters = parameters {
-            if let bindPtr = bindPtr {
-                if bindsCapacity != parameters.count {
-                    onCompletion(.error(QueryError.databaseError("Each of multiple execute() calls must pass the same number of parameters.")))
-                    return
-                }
-            } else { // true only for the first time execute() is called for this PreparedStatement
-                bindsCapacity = parameters.count
-                bindPtr = UnsafeMutablePointer<MYSQL_BIND>.allocate(capacity: bindsCapacity)
-            }
-
-            do {
-                try allocateBinds(parameters: parameters)
-            } catch {
-                self.statement = nil
-                mysql_stmt_close(statement)
-                onCompletion(.error(error))
-                return
-            }
-        }
-
-        guard let resultMetadata = mysql_stmt_result_metadata(statement) else {
-            // non-query statement (insert, update, delete)
-
-            guard mysql_stmt_execute(statement) == 0 else {
-                handleError(onCompletion: onCompletion)
-                return
-            }
-
-            do {
-              if query != nil, let insertQuery = query as? Insert, insertQuery.returnID {
-                
-                guard let idColumn = insertQuery.table.columns.first(where: {$0.isPrimaryKey && $0.autoIncrement}) else {
-                  throw QueryError.syntaxError("Could not retrieve ID Column in order to return the ID value")
-                }
-
-                // Close current statement before executing another.
-                self.statement = nil
-                mysql_stmt_close(statement)
-                try MySQLPreparedStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)", mysql: self.mysql).execute(onCompletion: onCompletion)
-                return
-              }
-            } catch {
-              onCompletion(.error(error))
-            }
-
-            let affectedRows = mysql_stmt_affected_rows(statement)
-            onCompletion(.success("\(affectedRows) rows affected"))
-            return
-        }
-
-        do {
-            let resultFetcher = try MySQLResultFetcher(preparedStatement: self, resultMetadata: resultMetadata)
-            onCompletion(.resultSet(ResultSet(resultFetcher)))
-        } catch {
-            onCompletion(.error(error))
-        }
+    internal func getError(_ statement: UnsafeMutablePointer<MYSQL_STMT>) -> String {
+        return "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
     }
 
-    private func handleError(onCompletion: @escaping ((QueryResult) -> ())) {
-        guard let statement = self.statement else {
-            return
-        }
-        self.statement = nil
-        let error = MySQLConnection.getError(statement)
-        print(error)
-        onCompletion(.error(QueryError.databaseError(error)))
-    }
-
-    private func allocateBinds(parameters: [Any?]) throws {
+    internal func allocateBinds(parameters: [Any?]) -> Bool {
         var cols: [Column]?
         switch query {
         case let insert as Insert:
@@ -173,8 +90,9 @@ public class MySQLPreparedStatement: PreparedStatement {
         }
 
         guard mysql_stmt_bind_param(statement, bindPtr) == mysql_false() else {
-            throw QueryError.databaseError(MySQLConnection.getError(statement!))
+            return false
         }
+        return true
     }
 
     private func deallocateBinds() {
