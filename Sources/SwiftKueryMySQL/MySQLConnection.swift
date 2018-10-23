@@ -255,9 +255,12 @@ public class MySQLConnection: Connection {
                     if result.asResultSet == nil {
                         self.release(preparedStatement: statement) { _ in
                             self.runCompletionHandler(result, onCompletion: onCompletion)
+                            return
                         }
+                        return
                     }
                     self.runCompletionHandler(result, onCompletion: onCompletion)
+                    return
                 }
             }
             mysql_thread_end()
@@ -287,9 +290,12 @@ public class MySQLConnection: Connection {
                     if result.asResultSet == nil {
                         self.release(preparedStatement: statement) { _ in
                             self.runCompletionHandler(result, onCompletion: onCompletion)
+                            return
                         }
+                        return
                     }
                     self.runCompletionHandler(result, onCompletion: onCompletion)
+                    return
                 }
             }
             mysql_thread_end()
@@ -318,9 +324,12 @@ public class MySQLConnection: Connection {
                     if result.asResultSet == nil {
                         self.release(preparedStatement: statement) { _ in
                             self.runCompletionHandler(result, onCompletion: onCompletion)
+                            return
                         }
+                        return
                     }
                     self.runCompletionHandler(result, onCompletion: onCompletion)
+                    return
                 }
             }
             mysql_thread_end()
@@ -350,9 +359,12 @@ public class MySQLConnection: Connection {
                     if result.asResultSet == nil {
                         self.release(preparedStatement: statement) { _ in
                             self.runCompletionHandler(result, onCompletion: onCompletion)
+                            return
                         }
+                        return
                     }
                     self.runCompletionHandler(result, onCompletion: onCompletion)
+                    return
                 }
             }
             mysql_thread_end()
