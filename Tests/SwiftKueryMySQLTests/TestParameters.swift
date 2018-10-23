@@ -131,8 +131,9 @@ class TestParameters: XCTestCase {
                 onCompletion(result)
                 return
             }
-            if index >= 0 {
-                self.executePreparedStatementWithParameterArray(statement: statement, count: index - 1, params: params, connection: connection, onCompletion: onCompletion)
+            let nextIndex = index - 1
+            if nextIndex > 0 {
+                self.executePreparedStatementWithParameterArray(statement: statement, count: nextIndex, params: params, connection: connection, onCompletion: onCompletion)
             } else {
                 onCompletion(result)
             }
