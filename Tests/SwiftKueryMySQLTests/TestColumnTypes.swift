@@ -46,30 +46,49 @@ class TestColumnTypes: XCTestCase {
         testColumnTypes(batchParameters: true)
     }
 
-    func executeRecursively(statement: PreparedStatement, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeRecursivelyColumnTypes(statement: PreparedStatement, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
         let parameters = index % 2 == 0 ? params[0] : params[1]
         connection.execute(preparedStatement: statement, parameters: parameters) { result in
             if result.asError != nil {
                 onCompletion(result)
                 return
             }
-            if index >= 0 {
-                self.executeRecursively(statement: statement, count: index - 1, params: params, connection: connection, onCompletion: onCompletion)
+            let nextIndex = index - 1
+            if nextIndex > 0 {
+                self.executeRecursivelyColumnTypes(statement: statement, count: nextIndex, params: params, connection: connection, onCompletion: onCompletion)
             } else {
                 onCompletion(result)
             }
         }
     }
 
-    func executeRecursively(raw: String, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
+    func executeRecursivelyColumnTypes(raw: String, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
         let parameters = index % 2 == 0 ? params[0] : params[1]
         connection.execute(raw, parameters: parameters) { result in
             if result.asError != nil {
                 onCompletion(result)
                 return
             }
-            if index >= 0 {
-                self.executeRecursively(raw: raw, count: index - 1, params: params, connection: connection, onCompletion: onCompletion)
+            let nextIndex = index - 1
+            if nextIndex > 0 {
+                self.executeRecursivelyColumnTypes(raw: raw, count: nextIndex, params: params, connection: connection, onCompletion: onCompletion)
+            } else {
+                onCompletion(result)
+            }
+        }
+    }
+
+    func executeRecursively(statement: PreparedStatement, count index: Int, params: [[Any?]], connection: Connection, onCompletion: @escaping ((QueryResult) -> ())) {
+        let iteration = params.count - index
+        let parameters = params[iteration]
+        connection.execute(preparedStatement: statement, parameters: parameters) { result in
+            if result.asError != nil {
+                onCompletion(result)
+                return
+            }
+            let nextIndex = index - 1
+            if nextIndex > 0 {
+                self.executeRecursively(statement: statement, count: nextIndex, params: params, connection: connection, onCompletion: onCompletion)
             } else {
                 onCompletion(result)
             }
@@ -126,7 +145,7 @@ class TestColumnTypes: XCTestCase {
                                 XCTFail("Error in INSERT: \(error.localizedDescription)")
                                 return
                             }
-                            self.executeRecursively(statement: preparedStatement, count: parametersCount, params: parameters, connection: connection) { result in
+                            self.executeRecursivelyColumnTypes(statement: preparedStatement, count: parametersCount, params: parameters, connection: connection) { result in
                                 if let error = result.asError {
                                     connection.release(preparedStatement: preparedStatement) { _ in }
                                     XCTFail("Error in INSERT: \(error.localizedDescription)")
@@ -141,7 +160,7 @@ class TestColumnTypes: XCTestCase {
                                     XCTAssertNotNil(rows, "SELECT returned no rows")
                                     if let rows = rows {
                                         let rowCount = rows[0][0]
-                                        XCTAssertEqual(rowCount as? Int64, Int64(parametersCount * 2), "Incorrect number of rows inserted: \(String(describing: rowCount)) (type: \(type(of: rowCount)))")
+                                        XCTAssertEqual(rowCount as? Int64, Int64(parametersCount), "Incorrect number of rows inserted: \(String(describing: rowCount)) (type: \(type(of: rowCount)))")
                                     }
 
                                     let rawSelect = "SELECT * from " + t.tableName
@@ -187,7 +206,7 @@ class TestColumnTypes: XCTestCase {
                             }
                         }
                     } else {
-                        self.executeRecursively(raw: rawInsert, count: parametersCount, params: parameters, connection: connection) { result in
+                        self.executeRecursivelyColumnTypes(raw: rawInsert, count: parametersCount, params: parameters, connection: connection) { result in
                             if let error = result.asError {
                                 XCTFail("Error in INSERT: \(error.localizedDescription)")
                             }
@@ -201,7 +220,7 @@ class TestColumnTypes: XCTestCase {
                                 XCTAssertNotNil(rows, "SELECT returned no rows")
                                 if let rows = rows {
                                     let rowCount = rows[0][0]
-                                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount * 2), "Incorrect number of rows inserted: \(String(describing: rowCount)) (type: \(type(of: rowCount)))")
+                                    XCTAssertEqual(rowCount as? Int64, Int64(parametersCount), "Incorrect number of rows inserted: \(String(describing: rowCount)) (type: \(type(of: rowCount)))")
                                 }
 
                                 let rawSelect = "SELECT * from " + t.tableName
