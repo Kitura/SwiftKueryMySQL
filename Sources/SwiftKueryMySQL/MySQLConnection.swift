@@ -653,9 +653,11 @@ public class MySQLConnection: Connection {
                         if result.asResultSet == nil {
                             self.release(preparedStatement: statement) { _ in
                                 self.runCompletionHandler(result, onCompletion: onCompletion)
+                                return
                             }
                         }
                         self.runCompletionHandler(result, onCompletion: onCompletion)
+                        return
                     }
                 }
                 return
@@ -675,6 +677,7 @@ public class MySQLConnection: Connection {
             return
         }
         runCompletionHandler(.resultSet(ResultSet(resultFetcher)), onCompletion: onCompletion)
+        return
     }
 }
 
