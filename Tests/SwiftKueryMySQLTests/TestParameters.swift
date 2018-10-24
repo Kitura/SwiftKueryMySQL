@@ -176,22 +176,23 @@ class TestParameters: XCTestCase {
                                 connection.release(preparedStatement: preparedStatement) { _ in }
                                 XCTFail("Error in INSERT: \(error.localizedDescription)")
                             }
+                            connection.release(preparedStatement: preparedStatement) { _ in
+                                let s1 = Select(from: t)
+                                executeQuery(query: s1, connection: connection) { result, rows in
+                                    XCTAssertEqual(result.success, true, "SELECT failed")
+                                    XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
+                                    XCTAssertNotNil(rows, "SELECT returned no rows")
+                                    XCTAssertEqual(rows?.count, 3, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 3")
+                                    XCTAssertEqual(rows?[0][0] as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[0][0])) instead of 'apple'")
+                                    XCTAssertEqual(rows?[1][0] as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[1][0])) instead of 'apricot'")
+                                    XCTAssertEqual(rows?[2][0] as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[2][0])) instead of 'banana'")
+                                    XCTAssertEqual(rows?[0][1] as? Int32, 10, "Wrong value in row 0 column 0: \(String(describing: rows?[0][1])) instead of 10")
+                                    XCTAssertEqual(rows?[1][1] as? Int32, 3, "Wrong value in row 0 column 0: \(String(describing: rows?[1][1])) instead of 3")
+                                    XCTAssertEqual(rows?[2][1] as? Int32, -8, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of -8")
 
-                            let s1 = Select(from: t)
-                            executeQuery(query: s1, connection: connection) { result, rows in
-                                XCTAssertEqual(result.success, true, "SELECT failed")
-                                XCTAssertNotNil(result.asResultSet, "SELECT returned no rows")
-                                XCTAssertNotNil(rows, "SELECT returned no rows")
-                                XCTAssertEqual(rows?.count, 3, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 3")
-                                XCTAssertEqual(rows?[0][0] as? String, "apple", "Wrong value in row 0 column 0: \(String(describing: rows?[0][0])) instead of 'apple'")
-                                XCTAssertEqual(rows?[1][0] as? String, "apricot", "Wrong value in row 0 column 0: \(String(describing: rows?[1][0])) instead of 'apricot'")
-                                XCTAssertEqual(rows?[2][0] as? String, "banana", "Wrong value in row 0 column 0: \(String(describing: rows?[2][0])) instead of 'banana'")
-                                XCTAssertEqual(rows?[0][1] as? Int32, 10, "Wrong value in row 0 column 0: \(String(describing: rows?[0][1])) instead of 10")
-                                XCTAssertEqual(rows?[1][1] as? Int32, 3, "Wrong value in row 0 column 0: \(String(describing: rows?[1][1])) instead of 3")
-                                XCTAssertEqual(rows?[2][1] as? Int32, -8, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of -8")
-
-                                cleanUp(table: t.tableName, connection: connection) { _ in
-                                    semaphore.signal()
+                                    cleanUp(table: t.tableName, connection: connection) { _ in
+                                        semaphore.signal()
+                                    }
                                 }
                             }
                         }
