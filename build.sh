@@ -31,7 +31,9 @@ else
             sudo -E apt-get install -y pkg-config
             sudo -E apt-get install -q -y mysql-server
             sudo -E apt-get install -y libmysqlclient-dev
-            sudo -E service mysql start
+            #sudo -E service mysql start
+            /usr/bin/mysqld_safe --user=mysql &
+            sleep(5)
             mysql --version
         fi
     fi
