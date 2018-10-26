@@ -33,7 +33,7 @@ else
             sudo -E apt-get install -y libmysqlclient-dev
             #sudo -E service mysql start
             /usr/bin/mysqld_safe --user=mysql &
-            sleep(5)
+            sleep 5
             mysql --version
         fi
     fi
