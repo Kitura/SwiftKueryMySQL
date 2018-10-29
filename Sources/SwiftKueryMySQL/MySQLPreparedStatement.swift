@@ -36,8 +36,8 @@ public class MySQLPreparedStatement: PreparedStatement {
     }
 
     deinit {
-        release { _ in
-            return
+        if self.statement != nil {
+            print("WARNING: Deinitialising a prepared statement that has not been explictly released. Not explicitly release your prepared statements will cause a memory leak.")
         }
     }
 

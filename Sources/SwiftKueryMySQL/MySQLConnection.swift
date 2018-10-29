@@ -386,8 +386,7 @@ public class MySQLConnection: Connection {
     /// Prepare statement.
     ///
     /// - Parameter query: The query to prepare statement for.
-    /// - Returns: The prepared statement.
-    /// - Throws: QueryError.syntaxError if query build fails, or a database error if it fails to prepare statement.
+    /// - Parameter onCompletion: The function to be called when the statement has been prepared.
     public func prepareStatement(_ query: Query, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
         var mySQLQuery: String
         do {
@@ -399,6 +398,10 @@ public class MySQLConnection: Connection {
         prepareStatement(mySQLQuery, query: query, onCompletion: onCompletion)
     }
 
+    /// Prepare statement.
+    ///
+    /// - Parameter raw: A String with the query to prepare statement for.
+    /// - Parameter onCompletion: The function to be called when the statement has been prepared.
     public func prepareStatement(_ raw: String, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
         prepareStatement(raw, query: nil, onCompletion: onCompletion)
     }
@@ -406,6 +409,7 @@ public class MySQLConnection: Connection {
     /// Prepare statement.
     ///
     /// - Parameter raw: A String with the query to prepare statement for.
+    /// - Parameter onCompletion: The function to be called when the statement has been prepared.
     private func prepareStatement(_ raw: String, query: Query? = nil, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
@@ -547,24 +551,6 @@ public class MySQLConnection: Connection {
             self.executeTransaction(command: "RELEASE SAVEPOINT \(savepoint)", inTransaction: true, changeTransactionState: false, errorMessage: "Failed to release the savepoint \(savepoint)", onCompletion: onCompletion)
         }
     }
-
-/*    func prepareStatement(_ query: Query, onCompletion: @escaping ((QueryResult) -> ())) -> MySQLPreparedStatement? {
-        do {
-            return try prepareStatement(query) as? MySQLPreparedStatement
-        } catch {
-            onCompletion(.error(error))
-            return nil
-        }
-    }
-
-    func prepareStatement(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) -> MySQLPreparedStatement? {
-        do {
-            return try prepareStatement(raw) as? MySQLPreparedStatement
-        } catch {
-            onCompletion(.error(error))
-            return nil
-        }
-    }*/
 
     func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
 
