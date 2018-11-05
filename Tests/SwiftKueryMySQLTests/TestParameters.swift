@@ -162,9 +162,9 @@ class TestParameters: XCTestCase {
                     let i1 = "insert into " + t.tableName + " values(?, ?)"
                     let parametersArray = [["apple", 10], ["apricot", 3], ["banana", -8]]
 
-                    connection.prepareStatement(i1) { stmt, error in
-                        guard let preparedStatement = stmt else {
-                            guard let error = error else {
+                    connection.prepareStatement(i1) { result in
+                        guard let preparedStatement = result.asPreparedStatement else {
+                            guard let error = result.asError else {
                                 XCTFail("Error in INSERT")
                                 return
                             }

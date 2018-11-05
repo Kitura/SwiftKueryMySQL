@@ -136,9 +136,9 @@ class TestColumnTypes: XCTestCase {
 
                     let start = Date.timeIntervalSinceReferenceDate
                     if batchParameters {
-                        connection.prepareStatement(rawInsert) { stmt, error in
-                            guard let preparedStatement = stmt else {
-                                guard let error = error else {
+                        connection.prepareStatement(rawInsert) { result in
+                            guard let preparedStatement = result.asPreparedStatement else {
+                                guard let error = result.asError else {
                                     XCTFail("Error in INSERT")
                                     return
                                 }
@@ -348,9 +348,9 @@ class TestColumnTypes: XCTestCase {
 
                     let parametersArray = [[0, insertedBlobs[0]], [1, [UInt8](insertedBlobs[1])], [2, insertedBlobs[2]], [3, insertedBlobs[3]]]
 
-                    connection.prepareStatement(rawInsert) { stmt, error in
-                        guard let preparedStatement = stmt else {
-                            guard let error = error else {
+                    connection.prepareStatement(rawInsert) { result in
+                        guard let preparedStatement = result.asPreparedStatement else {
+                            guard let error = result.asError else {
                                 XCTFail("Error in INSERT")
                                 return
                             }

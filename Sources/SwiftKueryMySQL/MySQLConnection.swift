@@ -132,8 +132,8 @@ public class MySQLConnection: Connection {
         let connectionGenerator: () -> Connection? = {
             let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet, reconnect: reconnect)
             connection.setTimeout(to: UInt(poolOptions.timeout))
-            let error = connection.connectSync()
-            return error != nil ? nil : connection
+            let result = connection.connectSync()
+            return result.success ? connection : nil
         }
 
         let connectionReleaser: (_ connection: Connection) -> () = { connection in
@@ -155,7 +155,7 @@ public class MySQLConnection: Connection {
     /// Establish a connection with the database.
     ///
     /// - Parameter onCompletion: The function to be called when the connection is established.
-    public func connect(onCompletion: @escaping (QueryError?) -> ()) {
+    public func connect(onCompletion: @escaping (QueryResult) -> ()) {
         DispatchQueue.global().async {
             let mysql: UnsafeMutablePointer<MYSQL> = self.mysql ?? mysql_init(nil)
 
@@ -182,30 +182,30 @@ public class MySQLConnection: Connection {
                 }
 
                 self.mysql = mysql
-                onCompletion(nil) // success
+                return self.runCompletionHandler(.successNoData, onCompletion: onCompletion) // success
             } else {
                 self.mysql = nil
-                onCompletion(QueryError.connection(self.getError(mysql)))
+                let error = self.getError(mysql)
                 mysql_thread_end() // should be called for each mysql_init() call
+                return self.runCompletionHandler(.error(QueryError.connection(error)), onCompletion: onCompletion)
             }
         }
     }
     
     /// Establish a connection with the database.
     ///
-    public func connectSync() -> QueryError? {
-        var error: QueryError?
+    public func connectSync() -> QueryResult {
+        var result: QueryResult? = nil
         let semaphore = DispatchSemaphore(value: 0)
-        connect { err in
-            error = err
+        connect() { res in
+            result = res
             semaphore.signal()
         }
         semaphore.wait()
-        guard let errorUnwrapped = error else {
-            // Everything worked
-            return nil
+        guard let resultUnwrapped = result else {
+            return .error(QueryError.connection("ConnectSync unexpetedly return a nil QueryResult"))
         }
-        return errorUnwrapped
+        return resultUnwrapped
     }
 
     /// Set connection timeout
@@ -240,9 +240,9 @@ public class MySQLConnection: Connection {
     public func execute(query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
-            self.prepareStatement(query) { stmt, error in
-                guard let statement = stmt else {
-                    if let error = error {
+            self.prepareStatement(query) { result in
+                guard let statement = result.asPreparedStatement else {
+                    if let error = result.asError {
                         self.runCompletionHandler(.error(QueryError.databaseError(error.localizedDescription)), onCompletion: onCompletion)
                         mysql_thread_end()
                         return
@@ -275,9 +275,9 @@ public class MySQLConnection: Connection {
     public func execute(query: Query, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
-            self.prepareStatement(query) { stmt, error in
-                guard let statement = stmt else {
-                    if let error = error {
+            self.prepareStatement(query) { result in
+                guard let statement = result.asPreparedStatement else {
+                    if let error = result.asError {
                         self.runCompletionHandler(.error(QueryError.databaseError(error.localizedDescription)), onCompletion: onCompletion)
                         mysql_thread_end()
                         return
@@ -309,9 +309,9 @@ public class MySQLConnection: Connection {
     public func execute(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
-            self.prepareStatement(raw) { stmt, error in
-                guard let statement = stmt else {
-                    if let error = error {
+            self.prepareStatement(raw) { result in
+                guard let statement = result.asPreparedStatement else {
+                    if let error = result.asError {
                         self.runCompletionHandler(.error(QueryError.databaseError(error.localizedDescription)), onCompletion: onCompletion)
                         mysql_thread_end()
                         return
@@ -344,9 +344,9 @@ public class MySQLConnection: Connection {
     public func execute(_ raw: String, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
-            self.prepareStatement(raw) { stmt, error in
-                guard let statement = stmt else {
-                    if let error = error {
+            self.prepareStatement(raw) { result in
+                guard let statement = result.asPreparedStatement else {
+                    if let error = result.asError {
                         self.runCompletionHandler(.error(QueryError.databaseError(error.localizedDescription)), onCompletion: onCompletion)
                         mysql_thread_end()
                         return
@@ -387,13 +387,12 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter query: The query to prepare statement for.
     /// - Parameter onCompletion: The function to be called when the statement has been prepared.
-    public func prepareStatement(_ query: Query, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
+    public func prepareStatement(_ query: Query, onCompletion: @escaping ((QueryResult) -> ())) {
         var mySQLQuery: String
         do {
             mySQLQuery = try query.build(queryBuilder: queryBuilder)
         } catch let error {
-            runCompletionHandler(nil, QueryError.syntaxError("Unable to prepare statement: \(error.localizedDescription)"), onCompletion: onCompletion)
-            return
+            return runCompletionHandler(.error(QueryError.syntaxError("Unable to prepare statement: \(error.localizedDescription)")), onCompletion: onCompletion)
         }
         prepareStatement(mySQLQuery, query: query, onCompletion: onCompletion)
     }
@@ -402,7 +401,7 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter raw: A String with the query to prepare statement for.
     /// - Parameter onCompletion: The function to be called when the statement has been prepared.
-    public func prepareStatement(_ raw: String, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
+    public func prepareStatement(_ raw: String, onCompletion: @escaping ((QueryResult) -> ())) {
         prepareStatement(raw, query: nil, onCompletion: onCompletion)
     }
 
@@ -410,34 +409,30 @@ public class MySQLConnection: Connection {
     ///
     /// - Parameter raw: A String with the query to prepare statement for.
     /// - Parameter onCompletion: The function to be called when the statement has been prepared.
-    private func prepareStatement(_ raw: String, query: Query? = nil, onCompletion: @escaping ((PreparedStatement?, QueryError?) -> ())) {
+    private func prepareStatement(_ raw: String, query: Query? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
 
             guard let mysql = self.mysql else {
-                self.runCompletionHandler(nil, QueryError.connection("Connection not connected"), onCompletion: onCompletion)
-                return
+                return self.runCompletionHandler(.error(QueryError.connection("Connection not connected")), onCompletion: onCompletion)
             }
 
             guard let statement = mysql_stmt_init(mysql) else {
                 let error = self.getError(mysql)
-                self.runCompletionHandler(nil, QueryError.databaseError(error), onCompletion: onCompletion)
                 mysql_thread_end()
-                return
+                return self.runCompletionHandler(.error(QueryError.databaseError(error)), onCompletion: onCompletion)
             }
 
             guard mysql_stmt_prepare(statement, raw, UInt(raw.utf8.count)) == 0 else {
                 let error = "ERROR \(mysql_stmt_errno(statement)): " + String(cString: mysql_stmt_error(statement))
                 mysql_stmt_close(statement)
-                self.runCompletionHandler(nil, QueryError.databaseError(error), onCompletion: onCompletion)
                 mysql_thread_end()
-                return
+                return self.runCompletionHandler(.error(QueryError.databaseError(error)), onCompletion: onCompletion)
             }
 
             let stmt = MySQLPreparedStatement(query: query, mysql: mysql, statement: statement)
-            self.runCompletionHandler(stmt, nil, onCompletion: onCompletion)
             mysql_thread_end()
-            return
+            return self.runCompletionHandler(.success(stmt), onCompletion: onCompletion)
         }
     }
 
@@ -626,9 +621,9 @@ public class MySQLConnection: Connection {
                 // Close current statement before executing another.
                 statement.statement = nil
                 mysql_stmt_close(statementPtr)
-                prepareStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)") { stmt, error in
-                    guard let statement = stmt else {
-                        if let error = error {
+                prepareStatement("SELECT LAST_INSERT_ID() AS \(idColumn.name)") { result in
+                    guard let statement = result.asPreparedStatement else {
+                        if let error = result.asError {
                             self.runCompletionHandler(.error(QueryError.databaseError(error.localizedDescription)), onCompletion: onCompletion)
                             return
                         }
