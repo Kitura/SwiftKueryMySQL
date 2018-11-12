@@ -379,7 +379,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution of the query has completed.
     public func execute(_ raw: String, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
-            onCompletion(.error(QueryError.unsupported("Named parameters with raw queries are not supported in MySQL")))
+            return self.runCompletionHandler(.error(QueryError.unsupported("Named parameters with raw queries are not supported in MySQL")), onCompletion: onCompletion)
         }
     }
 
@@ -486,7 +486,7 @@ public class MySQLConnection: Connection {
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, parameters: [String:Any?], onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
-            onCompletion(.error(QueryError.unsupported("Named parameters in prepared statemennts are not supported in MySQL")))
+            return self.runCompletionHandler(.error(QueryError.unsupported("Named parameters in prepared statemennts are not supported in MySQL")), onCompletion: onCompletion)
         }
     }
 
@@ -550,23 +550,21 @@ public class MySQLConnection: Connection {
     func executeTransaction(command: String, inTransaction: Bool, changeTransactionState: Bool, errorMessage: String, onCompletion: @escaping ((QueryResult) -> ())) {
 
         guard let mysql = self.mysql else {
-            onCompletion(.error(QueryError.connection("Not connected, call connect() first")))
-            return
+            return runCompletionHandler(.error(QueryError.connection("Not connected, call connect() first")), onCompletion: onCompletion)
         }
 
         guard self.inTransaction == inTransaction else {
             let error = self.inTransaction ? "Transaction already exists" : "No transaction exists"
-            onCompletion(.error(QueryError.transactionError(error)))
-            return
+            return runCompletionHandler(.error(QueryError.transactionError(error)), onCompletion: onCompletion)
         }
 
         if mysql_query(mysql, command) == 0 {
             if changeTransactionState {
                 self.inTransaction = !self.inTransaction
             }
-            onCompletion(.successNoData)
+            return runCompletionHandler(.successNoData, onCompletion: onCompletion)
         } else {
-            onCompletion(.error(QueryError.databaseError("\(errorMessage): \(getError(mysql))")))
+            return runCompletionHandler(.error(QueryError.databaseError("\(errorMessage): \(getError(mysql))")), onCompletion: onCompletion)
         }
     }
 
@@ -576,8 +574,7 @@ public class MySQLConnection: Connection {
 
     func executePreparedStatement(statement: MySQLPreparedStatement, parameters: [Any?]? = nil, onCompletion: @escaping ((QueryResult) -> ())) {
         guard let statementPtr = statement.statement else {
-            onCompletion(.error(QueryError.connection("PreparedStatement release() has already been called.")))
-            return
+            return runCompletionHandler(.error(QueryError.connection("PreparedStatement release() has already been called.")), onCompletion: onCompletion)
         }
 
         if let parameters = parameters {
