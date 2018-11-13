@@ -654,7 +654,7 @@ public class MySQLConnection: Connection {
             }
             return
         }
-        runCompletionHandler(.resultSet(ResultSet(resultFetcher)), onCompletion: onCompletion)
+        runCompletionHandler(.resultSet(ResultSet(resultFetcher, connection: self)), onCompletion: onCompletion)
         return
     }
 }
