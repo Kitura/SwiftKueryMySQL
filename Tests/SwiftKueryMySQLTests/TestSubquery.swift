@@ -15,7 +15,6 @@
  */
 
 import XCTest
-import Dispatch
 import SwiftKuery
 
 #if os(Linux)
@@ -43,8 +42,6 @@ class TestSubquery: XCTestCase {
         let t = MyTable()
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -151,7 +148,7 @@ class TestSubquery: XCTestCase {
                                                                     XCTAssertNotNil(rows, "SELECT returned no rows")
                                                                     XCTAssertEqual(rows?.count, 6, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 6")
 
-                                                                    semaphore.signal()
+                                                                    expectation.fulfill()
                                                                 }
                                                             }
                                                         }
@@ -166,9 +163,6 @@ class TestSubquery: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }

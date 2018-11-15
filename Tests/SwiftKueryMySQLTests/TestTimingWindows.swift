@@ -16,7 +16,6 @@
 
 import XCTest
 import Foundation
-import Dispatch
 import SwiftKuery
 
 #if os(Linux)
@@ -49,7 +48,6 @@ class TestTimingWindows: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -70,13 +68,11 @@ class TestTimingWindows: XCTestCase {
                         XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
                         cleanUp(table: t.tableName, connection: connection) { _ in
-                            semaphore.signal()
+                            expectation.fulfill()
                         }
                     } // self.executeInsertQuery
                 } // t.create
             } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
         })
     }
 
@@ -100,7 +96,6 @@ class TestTimingWindows: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -121,13 +116,11 @@ class TestTimingWindows: XCTestCase {
                         XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
                         cleanUp(table: t.tableName, connection: connection) { _ in
-                            semaphore.signal()
+                            expectation.fulfill()
                         }
                     } // self.executeInsertQuery
                 } // t.create
             } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
         })
     }
 
@@ -151,7 +144,6 @@ class TestTimingWindows: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -172,13 +164,11 @@ class TestTimingWindows: XCTestCase {
                         XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
                         cleanUp(table: t.tableName, connection: connection) { _ in
-                            semaphore.signal()
+                            expectation.fulfill()
                         }
                     } // self.executeInsertQuery
                 } // t.create
             } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
         })
     }
 
@@ -202,7 +192,6 @@ class TestTimingWindows: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -223,13 +212,11 @@ class TestTimingWindows: XCTestCase {
                         XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
 
                         cleanUp(table: t.tableName, connection: connection) { _ in
-                            semaphore.signal()
+                            expectation.fulfill()
                         }
                     } // self.executeInsertQuery
                 } // t.create
             } // cleanup
-            semaphore.wait()
-            expectation.fulfill()
         })
     }
 

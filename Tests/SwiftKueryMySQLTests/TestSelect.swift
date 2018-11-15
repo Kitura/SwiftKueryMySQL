@@ -15,7 +15,6 @@
  */
 
 import XCTest
-import Dispatch
 import SwiftKuery
 
 #if os(Linux)
@@ -68,8 +67,6 @@ class TestSelect: XCTestCase {
         let t = MyTable()
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -206,7 +203,7 @@ class TestSelect: XCTestCase {
                                                                         XCTAssertEqual(result.success, true, "DROP TABLE failed")
                                                                         XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
 
-                                                                        semaphore.signal()
+                                                                        expectation.fulfill()
                                                                     }
                                                                 }
                                                             }
@@ -222,17 +219,12 @@ class TestSelect: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         }, { expectation in
             let t1 = MyTable1()
             let t2 = MyTable2()
             let t3 = MyTable3()
 
             let pool = CommonUtils.sharedInstance.getConnectionPool()
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -282,7 +274,7 @@ class TestSelect: XCTestCase {
                                                     XCTAssertEqual(rows?.count, 2, "SELECT returned wrong number of rows: \(String(describing: rows?.count)) instead of 2")
                                                     XCTAssertEqual(resultSet.titles.count, 6, "SELECT returned wrong number of columns: \(resultSet.titles.count) instead of 6")
 
-                                                    semaphore.signal()
+                                                    expectation.fulfill()
                                                 }
                                             }
                                         }
@@ -293,9 +285,6 @@ class TestSelect: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }

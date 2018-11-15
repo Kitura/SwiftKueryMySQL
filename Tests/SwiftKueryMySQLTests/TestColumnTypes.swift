@@ -16,7 +16,6 @@
 
 import XCTest
 import Foundation
-import Dispatch
 import SwiftKuery
 
 import CMySQL
@@ -100,8 +99,6 @@ class TestColumnTypes: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -198,7 +195,7 @@ class TestColumnTypes: XCTestCase {
                                                     }
                                                 }
                                                 cleanUp(table: t.tableName, connection: connection) { _ in
-                                                    semaphore.signal()
+                                                    expectation.fulfill()
                                                 }
                                             }
                                         }
@@ -259,7 +256,7 @@ class TestColumnTypes: XCTestCase {
                                             }
                                         }
                                         cleanUp(table: t.tableName, connection: connection) { _ in
-                                            semaphore.signal()
+                                            expectation.fulfill()
                                         }
                                     }
                                 }
@@ -268,9 +265,6 @@ class TestColumnTypes: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 
@@ -279,8 +273,6 @@ class TestColumnTypes: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -312,15 +304,12 @@ class TestColumnTypes: XCTestCase {
                             }
 
                             cleanUp(table: t.tableName, connection: connection) { _ in
-                                semaphore.signal()
+                                expectation.fulfill()
                             }
                         }
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 
@@ -329,8 +318,6 @@ class TestColumnTypes: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -383,7 +370,7 @@ class TestColumnTypes: XCTestCase {
                                     }
 
                                     cleanUp(table: t.tableName, connection: connection) { _ in
-                                        semaphore.signal()
+                                        expectation.fulfill()
                                     }
                                 }
                             }
@@ -391,9 +378,6 @@ class TestColumnTypes: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }

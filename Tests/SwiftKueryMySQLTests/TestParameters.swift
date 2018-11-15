@@ -15,7 +15,6 @@
  */
 
 import XCTest
-import Dispatch
 import SwiftKuery
 import SwiftKueryMySQL
 
@@ -49,8 +48,6 @@ class TestParameters: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -108,7 +105,7 @@ class TestParameters: XCTestCase {
                                             XCTAssertEqual(rows?[2][1] as? Int32, 4, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of 4")
 
                                             cleanUp(table: t.tableName, connection: connection) { _ in
-                                                semaphore.signal()
+                                                expectation.fulfill()
                                             }
                                         }
                                     }
@@ -118,9 +115,6 @@ class TestParameters: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 
@@ -145,8 +139,6 @@ class TestParameters: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -191,7 +183,7 @@ class TestParameters: XCTestCase {
                                     XCTAssertEqual(rows?[2][1] as? Int32, -8, "Wrong value in row 0 column 0: \(String(describing: rows?[2][1])) instead of -8")
 
                                     cleanUp(table: t.tableName, connection: connection) { _ in
-                                        semaphore.signal()
+                                        expectation.fulfill()
                                     }
                                 }
                             }
@@ -199,9 +191,6 @@ class TestParameters: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 
@@ -217,8 +206,6 @@ class TestParameters: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -284,7 +271,7 @@ class TestParameters: XCTestCase {
                                                 XCTAssertEqual(rows?[5][0] as? String, "qiwi", "Wrong value in row 5 column 0")
 
                                                 cleanUp(table: t.tableName, connection: connection) { _ in
-                                                    semaphore.signal()
+                                                    expectation.fulfill()
                                                 }
                                             }
                                         }
@@ -295,9 +282,6 @@ class TestParameters: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }

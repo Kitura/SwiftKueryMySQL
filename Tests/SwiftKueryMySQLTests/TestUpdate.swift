@@ -15,7 +15,6 @@
  */
 
 import XCTest
-import Dispatch
 import SwiftKuery
 
 #if os(Linux)
@@ -44,8 +43,6 @@ class TestUpdate: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -111,7 +108,7 @@ class TestUpdate: XCTestCase {
                                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                                         XCTAssertEqual(rows?.count, 0, "SELECT should not return any rows")
 
-                                                        semaphore.signal()
+                                                        expectation.fulfill()
                                                     }
                                                 }
                                             }
@@ -123,9 +120,6 @@ class TestUpdate: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }

@@ -16,7 +16,6 @@
 
 import XCTest
 import Foundation
-import Dispatch
 import SwiftKuery
 
 #if os(Linux)
@@ -65,8 +64,6 @@ class TestInsert: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -125,7 +122,7 @@ class TestInsert: XCTestCase {
 
                                                     cleanUp(table: t.tableName, connection: connection) { _ in
                                                         cleanUp(table: t2.tableName, connection: connection) { _ in
-                                                            semaphore.signal()
+                                                            expectation.fulfill()
                                                         }
                                                     }
                                                 }
@@ -138,9 +135,6 @@ class TestInsert: XCTestCase {
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 
@@ -149,8 +143,6 @@ class TestInsert: XCTestCase {
 
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
-
-            let semaphore = DispatchSemaphore(value: 0)
 
             guard let connection = pool.getConnection() else {
                 XCTFail("Failed to get connection")
@@ -195,15 +187,12 @@ class TestInsert: XCTestCase {
                             XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
                             
                             cleanUp(table: t3.tableName, connection: connection) { _ in
-                                semaphore.signal()
+                                expectation.fulfill()
                             }
                         }
                     }
                 }
             }
-            semaphore.wait()
-            //sleep(5)
-            expectation.fulfill()
         })
     }
 }
