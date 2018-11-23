@@ -50,6 +50,12 @@ matrix:
       env:
         - DOCKER_IMAGE=ubuntu:16.04 MYSQL_VER=5
       sudo: required
+    - os: linux
+      dist: trusty
+      services: docker
+      env:
+        - DOCKER_IMAGE=ubuntu:16.04 MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
+      sudo: required
     # Currently mysql 8 does not install cleanly on ubuntu 16.04
     #- os: linux
     #  dist: trusty
@@ -111,6 +117,11 @@ matrix:
       sudo: required
       env:
         - MYSQL_VER=8
+    - os: osx
+      osx_image: xcode10
+      sudo: required
+      env:
+        - MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
 
 script:
   - ./build.sh
