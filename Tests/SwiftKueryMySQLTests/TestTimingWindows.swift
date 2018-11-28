@@ -49,30 +49,31 @@ class TestTimingWindows: XCTestCase {
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
 
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                        return
-                    }
-
-                    let insertCount = 1000
-                    let query = Insert(into: t, values: "apple", 10)
-                    self.executeInsertQuery(count: insertCount, query: query, connection: connection) { result in
-                        XCTAssertEqual(result.success, true, "INSERT failed")
-                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-
-                        cleanUp(table: t.tableName, connection: connection) { _ in
-                            expectation.fulfill()
+            pool.getConnection { connection, error in
+                guard let connection = connection else {
+                    XCTFail("Failed to get connection")
+                    return
+                }
+                cleanUp(table: t.tableName, connection: connection) { _ in
+                    t.create(connection: connection) { result in
+                        if let error = result.asError {
+                            XCTFail("Error in CREATE TABLE: \(error)")
+                            return
                         }
-                    } // self.executeInsertQuery
-                } // t.create
-            } // cleanup
+
+                        let insertCount = 1000
+                        let query = Insert(into: t, values: "apple", 10)
+                        self.executeInsertQuery(count: insertCount, query: query, connection: connection) { result in
+                            XCTAssertEqual(result.success, true, "INSERT failed")
+                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                            cleanUp(table: t.tableName, connection: connection) { _ in
+                                expectation.fulfill()
+                            }
+                        } // self.executeInsertQuery
+                    } // t.create
+                } // cleanup
+            }
         })
     }
 
@@ -97,30 +98,31 @@ class TestTimingWindows: XCTestCase {
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
 
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                        return
-                    }
-
-                    let insertCount = 1000
-                    let query = Insert(into: t, values: Parameter(), Parameter())
-                    self.executeInsertQueryWithParameters(count: insertCount, query: query, parameters: ["apple", 10], connection: connection) { result in
-                        XCTAssertEqual(result.success, true, "INSERT failed")
-                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-
-                        cleanUp(table: t.tableName, connection: connection) { _ in
-                            expectation.fulfill()
+            pool.getConnection { connection, error in
+                guard let connection = connection else {
+                    XCTFail("Failed to get connection")
+                    return
+                }
+                cleanUp(table: t.tableName, connection: connection) { _ in
+                    t.create(connection: connection) { result in
+                        if let error = result.asError {
+                            XCTFail("Error in CREATE TABLE: \(error)")
+                            return
                         }
-                    } // self.executeInsertQuery
-                } // t.create
-            } // cleanup
+
+                        let insertCount = 1000
+                        let query = Insert(into: t, values: Parameter(), Parameter())
+                        self.executeInsertQueryWithParameters(count: insertCount, query: query, parameters: ["apple", 10], connection: connection) { result in
+                            XCTAssertEqual(result.success, true, "INSERT failed")
+                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                            cleanUp(table: t.tableName, connection: connection) { _ in
+                                expectation.fulfill()
+                            }
+                        } // self.executeInsertQuery
+                    } // t.create
+                } // cleanup
+            }
         })
     }
 
@@ -145,30 +147,31 @@ class TestTimingWindows: XCTestCase {
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
 
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                        return
-                    }
-
-                    let insertCount = 1000
-                    let raw = "insert into " + t.tableName + " values(\"apple\", 10)"
-                    self.executeRawInsertQuery(count: insertCount, raw: raw, connection: connection) { result in
-                        XCTAssertEqual(result.success, true, "INSERT failed")
-                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-
-                        cleanUp(table: t.tableName, connection: connection) { _ in
-                            expectation.fulfill()
+            pool.getConnection { connection, error in
+                guard let connection = connection else {
+                    XCTFail("Failed to get connection")
+                    return
+                }
+                cleanUp(table: t.tableName, connection: connection) { _ in
+                    t.create(connection: connection) { result in
+                        if let error = result.asError {
+                            XCTFail("Error in CREATE TABLE: \(error)")
+                            return
                         }
-                    } // self.executeInsertQuery
-                } // t.create
-            } // cleanup
+
+                        let insertCount = 1000
+                        let raw = "insert into " + t.tableName + " values(\"apple\", 10)"
+                        self.executeRawInsertQuery(count: insertCount, raw: raw, connection: connection) { result in
+                            XCTAssertEqual(result.success, true, "INSERT failed")
+                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                            cleanUp(table: t.tableName, connection: connection) { _ in
+                                expectation.fulfill()
+                            }
+                        } // self.executeInsertQuery
+                    } // t.create
+                } // cleanup
+            }
         })
     }
 
@@ -193,30 +196,31 @@ class TestTimingWindows: XCTestCase {
         let pool = CommonUtils.sharedInstance.getConnectionPool()
         performTest(asyncTasks: { expectation in
 
-            guard let connection = pool.getConnection() else {
-                XCTFail("Failed to get connection")
-                return
-            }
-
-            cleanUp(table: t.tableName, connection: connection) { _ in
-                t.create(connection: connection) { result in
-                    if let error = result.asError {
-                        XCTFail("Error in CREATE TABLE: \(error)")
-                        return
-                    }
-
-                    let insertCount = 1000
-                    let raw = "insert into " + t.tableName + " values(?, ?)"
-                    self.executeRawInsertQueryWithParameters(count: insertCount, raw: raw, parameters: ["apple", 10], connection: connection) { result in
-                        XCTAssertEqual(result.success, true, "INSERT failed")
-                        XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-
-                        cleanUp(table: t.tableName, connection: connection) { _ in
-                            expectation.fulfill()
+            pool.getConnection { connection, error in
+                guard let connection = connection else {
+                    XCTFail("Failed to get connection")
+                    return
+                }
+                cleanUp(table: t.tableName, connection: connection) { _ in
+                    t.create(connection: connection) { result in
+                        if let error = result.asError {
+                            XCTFail("Error in CREATE TABLE: \(error)")
+                            return
                         }
-                    } // self.executeInsertQuery
-                } // t.create
-            } // cleanup
+
+                        let insertCount = 1000
+                        let raw = "insert into " + t.tableName + " values(?, ?)"
+                        self.executeRawInsertQueryWithParameters(count: insertCount, raw: raw, parameters: ["apple", 10], connection: connection) { result in
+                            XCTAssertEqual(result.success, true, "INSERT failed")
+                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                            cleanUp(table: t.tableName, connection: connection) { _ in
+                                expectation.fulfill()
+                            }
+                        } // self.executeInsertQuery
+                    } // t.create
+                } // cleanup
+            }
         })
     }
 
