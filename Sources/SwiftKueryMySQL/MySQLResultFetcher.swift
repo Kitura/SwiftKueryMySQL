@@ -23,16 +23,26 @@ import CMySQL
 public class MySQLResultFetcher: ResultFetcher {
     private var preparedStatement: MySQLPreparedStatement
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
-    private let binds: [MYSQL_BIND]
+    private var binds: [MYSQL_BIND]
 
-    private let fieldNames: [String]
-    private let charsetnr: [UInt32]
+    private var fieldNames: [String]
+    private var charsetnr: [UInt32]
 
     private var hasMoreRows = true
+    
+    private var resultMetadata: UnsafeMutablePointer<MYSQL_RES>? = nil
 
-    init(preparedStatement: MySQLPreparedStatement, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) throws {
+    init(preparedStatement: MySQLPreparedStatement, resultMetadata: UnsafeMutablePointer<MYSQL_RES>) {
+        self.resultMetadata = resultMetadata
+        self.preparedStatement = preparedStatement
+        self.binds = [MYSQL_BIND]()
+        self.fieldNames = [String]()
+        self.charsetnr = [UInt32]()
+    }
+
+    internal func initialize() -> Bool {
         guard let fields = mysql_fetch_fields(resultMetadata) else {
-            throw MySQLResultFetcher.initError(preparedStatement)
+            return initError(preparedStatement)
         }
 
         let numFields = Int(mysql_num_fields(resultMetadata))
@@ -53,29 +63,26 @@ public class MySQLResultFetcher: ResultFetcher {
         }
 
         guard mysql_stmt_bind_result(preparedStatement.statement, bindPtr) == mysql_false() else {
-            throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
+            return initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
         guard mysql_stmt_execute(preparedStatement.statement) == 0 else {
-            throw MySQLResultFetcher.initError(preparedStatement, bindPtr: bindPtr, binds: binds)
+            return initError(preparedStatement, bindPtr: bindPtr, binds: binds)
         }
 
-        self.preparedStatement = preparedStatement
         self.bindPtr = bindPtr
         self.binds = binds
         self.fieldNames = fieldNames
         self.charsetnr = charsetnr
+
+        return true
     }
 
     deinit {
         close()
     }
 
-    private static func initError(_ preparedStatement: MySQLPreparedStatement, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> QueryError {
-
-        defer {
-            preparedStatement.release()
-        }
+    private func initError(_ preparedStatement: MySQLPreparedStatement, bindPtr: UnsafeMutablePointer<MYSQL_BIND>? = nil, binds: [MYSQL_BIND]? = nil) -> Bool {
 
         if let binds = binds {
             for bind in binds {
@@ -101,8 +108,7 @@ public class MySQLResultFetcher: ResultFetcher {
                 #endif
             }
         }
-
-        return QueryError.databaseError(MySQLConnection.getError(preparedStatement.statement!))
+        return false
     }
 
     private func close() {
@@ -128,23 +134,34 @@ public class MySQLResultFetcher: ResultFetcher {
             bindPtr.deallocate(capacity: binds.count)
             #endif
 
-            preparedStatement.release()
+            mysql_free_result(resultMetadata)
+            preparedStatement.release() { _ in }
         }
+    }
+
+    /// Indicate no further calls will be made to this ResultFetcher allowing the connection in use to be released.
+    ///
+    public func done() {
+        close()
     }
 
     /// Fetch the next row of the query result. This function is blocking.
     ///
     /// - Returns: An array of values of type Any? representing the next row from the query result.
     public func fetchNext() -> [Any?]? {
+        mysql_thread_init()
         guard hasMoreRows else {
+            mysql_thread_end()
             return nil
         }
 
         if let row = buildRow() {
+            mysql_thread_end()
             return row
         } else {
             hasMoreRows = false
             close()
+            mysql_thread_end()
             return nil
         }
     }
@@ -218,7 +235,7 @@ public class MySQLResultFetcher: ResultFetcher {
 
         if fetchStatus == 1 {
             // use a logger or add throws to the fetchNext signature?
-            print("ERROR: while fetching row: \(MySQLConnection.getError(preparedStatement.statement!))")
+            print("ERROR: while fetching row: \(preparedStatement.getError(preparedStatement.statement!))")
             return nil
         }
 
