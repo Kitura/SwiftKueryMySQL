@@ -21,7 +21,49 @@ import Foundation
 import SwiftKuery
 import SwiftKueryMySQL
 
-class MySQLTest: XCTestCase {
+protocol Test {
+    func expectation(_ index: Int) -> XCTestExpectation
+    func waitExpectation(timeout t: TimeInterval, handler: XCWaitCompletionHandler?)
+}
+
+extension Test {
+
+    func doSetUp() {
+    }
+
+    func doTearDown() {
+        // sleep(10)
+    }
+
+    func performTest(asyncTasks: (XCTestExpectation) -> Void...) {
+        let queue = DispatchQueue(label: "Query queue")
+
+        for (index, asyncTask) in asyncTasks.enumerated() {
+            let expectation = self.expectation(index)
+            queue.async() {
+                asyncTask(expectation)
+            }
+        }
+
+        waitExpectation(timeout: 30) { error in
+            // blocks test until request completes
+            XCTAssertNil(error)
+        }
+    }
+}
+
+extension XCTestCase: Test {
+    func expectation(_ index: Int) -> XCTestExpectation {
+        let expectationDescription = "\(type(of: self))-\(index)"
+        return self.expectation(description: expectationDescription)
+    }
+
+    func waitExpectation(timeout t: TimeInterval, handler: XCWaitCompletionHandler?) {
+        self.waitForExpectations(timeout: t, handler: handler)
+    }
+}
+
+/*class MySQLTest: XCTestCase {
     private static var threadSafePool: ConnectionPool?
     private static var threadUnsafePool: ConnectionPool?
 
@@ -55,7 +97,7 @@ class MySQLTest: XCTestCase {
             queue.suspend() // don't start executing tasks when queued
 
             for (index, asyncTask) in asyncTasks.enumerated() {
-                let exp = expectation(description: "\(type(of: self)):\(line)[\(index)]")
+                let exp = self.expectation(description: "\(type(of: self)):\(line)[\(index)]")
                 queue.async() {
                     asyncTask(connection)
                     exp.fulfill()
@@ -154,4 +196,4 @@ class MySQLTest: XCTestCase {
 
         return (nil, pool)
     }
-}
+}*/
