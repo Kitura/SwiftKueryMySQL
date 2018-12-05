@@ -139,6 +139,8 @@ public class MySQLResultFetcher: ResultFetcher {
         }
     }
 
+    /// Indicate no further calls will be made to this ResultFetcher allowing the connection in use to be released.
+    ///
     public func done() {
         close()
     }

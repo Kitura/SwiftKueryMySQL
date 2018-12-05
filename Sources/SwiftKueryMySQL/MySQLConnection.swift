@@ -252,6 +252,7 @@ public class MySQLConnection: Connection {
                     }
                     return
                 }
+                // We cannot release the prepared statement until the result is consumed. The statement will be released when the result set is closed or deinitialises
                 return self.runCompletionHandler(result, onCompletion: onCompletion)
             }
         }
@@ -277,6 +278,7 @@ public class MySQLConnection: Connection {
                     }
                     return
                 }
+                // We cannot release the prepared statement until the result is consumed. The statement will be released when the result set is closed or deinitialises
                 return self.runCompletionHandler(result, onCompletion: onCompletion)
             }
         }
@@ -301,6 +303,7 @@ public class MySQLConnection: Connection {
                     }
                     return
                 }
+                // We cannot release the prepared statement until the result is consumed. The statement will be released when the result set is closed or deinitialises
                 return self.runCompletionHandler(result, onCompletion: onCompletion)
             }
         }
@@ -326,6 +329,7 @@ public class MySQLConnection: Connection {
                     }
                     return
                 }
+                // We cannot release the prepared statement until the result is consumed. The statement will be released when the result set is closed or deinitialises
                 return self.runCompletionHandler(result, onCompletion: onCompletion)
             }
         }
@@ -401,7 +405,9 @@ public class MySQLConnection: Connection {
     public func release(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ())) {
         DispatchQueue.global().async {
             mysql_thread_init()
-            let mysqlStmt = preparedStatement as! MySQLPreparedStatement
+            guard let mysqlStmt = preparedStatement as? MySQLPreparedStatement else {
+                return self.runCompletionHandler(QueryResult.error(QueryError.unsupported("Parameter \"preparedStatement\" not an instance of MySQLPreparedStatement")), onCompletion: onCompletion)
+            }
             mysqlStmt.release { result in
                 self.runCompletionHandler(result, onCompletion: onCompletion)
                 return
@@ -415,7 +421,9 @@ public class MySQLConnection: Connection {
     /// - Parameter preparedStatement: The prepared statement to execute.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, onCompletion: @escaping ((QueryResult) -> ()))  {
-        let mysqlStmt = preparedStatement as! MySQLPreparedStatement
+        guard let mysqlStmt = preparedStatement as? MySQLPreparedStatement else {
+            return self.runCompletionHandler(QueryResult.error(QueryError.unsupported("Parameter \"preparedStatement\" not an instance of MySQLPreparedStatement")), onCompletion: onCompletion)
+        }
         executePreparedStatement(statement: mysqlStmt, parameters: nil, onCompletion: onCompletion)
     }
 
@@ -425,7 +433,9 @@ public class MySQLConnection: Connection {
     /// - Parameter parameters: An array of the parameters.
     /// - Parameter onCompletion: The function to be called when the execution has completed.
     public func execute(preparedStatement: PreparedStatement, parameters: [Any?], onCompletion: @escaping ((QueryResult) -> ())) {
-        let mysqlStmt = preparedStatement as! MySQLPreparedStatement
+        guard let mysqlStmt = preparedStatement as? MySQLPreparedStatement else {
+            return self.runCompletionHandler(QueryResult.error(QueryError.unsupported("Parameter \"preparedStatement\" not an instance of MySQLPreparedStatement")), onCompletion: onCompletion)
+        }
         executePreparedStatement(statement: mysqlStmt, parameters: parameters, onCompletion: onCompletion)
     }
 
@@ -575,6 +585,7 @@ public class MySQLConnection: Connection {
                                     return self.runCompletionHandler(result, onCompletion: onCompletion)
                                 }
                             }
+                            // We cannot release the prepared statement until the result is consumed. The statement will be released when the result set is closed or deinitialises
                             return self.runCompletionHandler(result, onCompletion: onCompletion)
                         }
                     }
