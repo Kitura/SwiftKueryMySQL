@@ -36,7 +36,11 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .systemLibrary(
             name: "CMySQL",
-            pkgConfig: "mysqlclient"
+            pkgConfig: "mysqlclient",
+            providers: [
+                .brew(["mysql"]),
+                .apt(["libmysqlclient-dev"])
+            ]
         ),
         .target(
             name: "SwiftKueryMySQL",
