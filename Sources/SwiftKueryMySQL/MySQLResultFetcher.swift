@@ -16,6 +16,7 @@
 
 import SwiftKuery
 import Foundation
+import Dispatch
 
 import CMySQL
 
