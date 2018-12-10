@@ -21,6 +21,7 @@ import CMySQL
 
 /// An implementation of query result fetcher.
 public class MySQLResultFetcher: ResultFetcher {
+
     private var preparedStatement: MySQLPreparedStatement
     private var bindPtr: UnsafeMutablePointer<MYSQL_BIND>?
     private var binds: [MYSQL_BIND]
@@ -145,40 +146,35 @@ public class MySQLResultFetcher: ResultFetcher {
         close()
     }
 
-    /// Fetch the next row of the query result. This function is blocking.
-    ///
-    /// - Returns: An array of values of type Any? representing the next row from the query result.
-    public func fetchNext() -> [Any?]? {
-        mysql_thread_init()
-        guard hasMoreRows else {
-            mysql_thread_end()
-            return nil
-        }
-
-        if let row = buildRow() {
-            mysql_thread_end()
-            return row
-        } else {
-            hasMoreRows = false
-            close()
-            mysql_thread_end()
-            return nil
-        }
-    }
-
     /// Fetch the next row of the query result. This function is non-blocking.
     ///
     /// - Parameter callback: A callback to call when the next row of the query result is ready.
-    public func fetchNext(callback: ([Any?]?) ->()) {
-        // For now
-        callback(fetchNext())
+    public func fetchNext(callback: @escaping (([Any?]?, Error?)) -> ()) {
+        DispatchQueue.global().async {
+            mysql_thread_init()
+            guard self.hasMoreRows else {
+                mysql_thread_end()
+                return callback((nil, nil))
+            }
+
+            if let row = self.buildRow() {
+                mysql_thread_end()
+                return callback((row, nil))
+            } else {
+                self.hasMoreRows = false
+                self.close()
+                mysql_thread_end()
+                return callback((nil, nil))
+            }
+        }
     }
 
-    /// Fetch the titles of the query result.
+    /// Fetch the titles of the query result. This function is non-blocking.
     ///
-    /// - Returns: An array of column titles of type String.
-    public func fetchTitles() -> [String] {
-        return fieldNames
+    /// - Parameter callback: A closure that accepts a tuple containing an optional array of column titles of type String and an optional Error
+    public func fetchTitles(callback: @escaping (([String]?, Error?)) -> ()) {
+        // As the titles are prepared during intialisation we can return without needing to offload.
+        return callback((fieldNames, nil))
     }
 
     private static func getOutputBind(_ field: MYSQL_FIELD) -> MYSQL_BIND {
