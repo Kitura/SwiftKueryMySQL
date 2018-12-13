@@ -165,39 +165,45 @@ class TestColumnTypes: XCTestCase {
                                             connection.execute(rawSelect) { result in
                                                 XCTAssertEqual(result.success, true, "SELECT failed")
                                                 XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                                                let resultSet = result.asResultSet
-                                                XCTAssertNotNil(resultSet, "SELECT returned no resultSet")
-                                                if let resultSet = resultSet {
-                                                    for (rowIndex, row) in resultSet.rows.enumerated() {
-                                                        let parameters = rowIndex % 2 == 0 ? parameters1 : parameters2
-                                                        for (columnIndex, selected) in row.enumerated() {
-                                                            let inserted = parameters[columnIndex]
-                                                            if let selected = selected, let inserted = inserted {
-                                                                if inserted is Data {
-                                                                    let insertedData = inserted as! Data
-                                                                    let selectedData = selected as! Data
-                                                                    XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
-                                                                } else if inserted is MYSQL_TIME {
-                                                                    let time = inserted as! MYSQL_TIME
-                                                                    let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
-                                                                    let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
-                                                                    XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
-                                                                } else if selected is Date {
-                                                                    let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
-                                                                    XCTAssertEqual(inserted as! String, selectedTime, "Column \(columnIndex+1) inserted Data (\(inserted)) is not equal to selected Data (\(selectedTime))")
-                                                                } else {
-                                                                    XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
-                                                                }
-                                                            } else if inserted == nil {
-                                                                XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                                guard let resultSet = result.asResultSet else {
+                                                    XCTFail("resultSet nil when expected to be returned")
+                                                    return
+                                                }
+                                                var rowIndex = 0
+                                                resultSet.forEach() { row, error in
+                                                    guard let row = row else {
+                                                        // No more rows
+                                                        cleanUp(table: t.tableName, connection: connection) { _ in
+                                                            return expectation.fulfill()
+                                                        }
+                                                        return
+                                                    }
+                                                    let parameters = rowIndex % 2 == 0 ? parameters1 : parameters2
+                                                    for (columnIndex, selected) in row.enumerated() {
+                                                        let inserted = parameters[columnIndex]
+                                                        if let selected = selected, let inserted = inserted {
+                                                            if inserted is Data {
+                                                                let insertedData = inserted as! Data
+                                                                let selectedData = selected as! Data
+                                                                XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
+                                                            } else if inserted is MYSQL_TIME {
+                                                                let time = inserted as! MYSQL_TIME
+                                                                let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
+                                                                let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
+                                                                XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
+                                                            } else if selected is Date {
+                                                                let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
+                                                                XCTAssertEqual(inserted as! String, selectedTime, "Column \(columnIndex+1) inserted Data (\(inserted)) is not equal to selected Data (\(selectedTime))")
                                                             } else {
-                                                                XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
+                                                                XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                                             }
+                                                        } else if inserted == nil {
+                                                            XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                                        } else {
+                                                            XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
                                                         }
                                                     }
-                                                    cleanUp(table: t.tableName, connection: connection) { _ in
-                                                        expectation.fulfill()
-                                                    }
+                                                    rowIndex += 1
                                                 }
                                             }
                                         }
@@ -226,39 +232,45 @@ class TestColumnTypes: XCTestCase {
                                     connection.execute(rawSelect) { result in
                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                         XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
-                                        let resultSet = result.asResultSet
-                                        XCTAssertNotNil(resultSet, "SELECT returned no resultSet")
-                                        if let resultSet = resultSet {
-                                            for (rowIndex, row) in resultSet.rows.enumerated() {
-                                                let parameters = rowIndex % 2 == 0 ? parameters1 : parameters2
-                                                for (columnIndex, selected) in row.enumerated() {
-                                                    let inserted = parameters[columnIndex]
-                                                    if let selected = selected, let inserted = inserted {
-                                                        if inserted is Data {
-                                                            let insertedData = inserted as! Data
-                                                            let selectedData = selected as! Data
-                                                            XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
-                                                        } else if inserted is MYSQL_TIME {
-                                                            let time = inserted as! MYSQL_TIME
-                                                            let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
-                                                            let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
-                                                            XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
-                                                        } else if selected is Date {
-                                                            let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
-                                                            XCTAssertEqual(inserted as! String, selectedTime, "Column \(columnIndex+1) inserted Data (\(inserted)) is not equal to selected Data (\(selectedTime))")
-                                                        } else {
-                                                            XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
-                                                        }
-                                                    } else if inserted == nil {
-                                                        XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                        guard let resultSet = result.asResultSet else {
+                                            XCTFail("resultSet nil when expected to be returned")
+                                            return
+                                        }
+                                        var rowIndex = 0
+                                        resultSet.forEach() { row, error in
+                                            guard let row = row else {
+                                                // No more rows
+                                                cleanUp(table: t.tableName, connection: connection) { _ in
+                                                    return expectation.fulfill()
+                                                }
+                                                return
+                                            }
+                                            let parameters = rowIndex % 2 == 0 ? parameters1 : parameters2
+                                            for (columnIndex, selected) in row.enumerated() {
+                                                let inserted = parameters[columnIndex]
+                                                if let selected = selected, let inserted = inserted {
+                                                    if inserted is Data {
+                                                        let insertedData = inserted as! Data
+                                                        let selectedData = selected as! Data
+                                                        XCTAssertEqual(insertedData, selectedData, "Column \(columnIndex+1) inserted Data (\(insertedData.hexString())) is not equal to selected Data (\(selectedData.hexString()))")
+                                                    } else if inserted is MYSQL_TIME {
+                                                        let time = inserted as! MYSQL_TIME
+                                                        let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
+                                                        let formattedTime = "\(time.year)-\(time.month.pad())-\(time.day.pad()) \(time.hour.pad()):\(time.minute.pad()):\(time.second.pad())"
+                                                        XCTAssertEqual(formattedTime, selectedTime, "Column \(columnIndex+1) inserted Data (\(formattedTime)) is not equal to selected Data (\(selectedTime))")
+                                                    } else if selected is Date {
+                                                        let selectedTime = MySQLConnection.dateTimeFormatter.string(from: selected as! Date)
+                                                        XCTAssertEqual(inserted as! String, selectedTime, "Column \(columnIndex+1) inserted Data (\(inserted)) is not equal to selected Data (\(selectedTime))")
                                                     } else {
-                                                        XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
+                                                        XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                                     }
+                                                } else if inserted == nil {
+                                                    XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                                } else {
+                                                    XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
                                                 }
                                             }
-                                            cleanUp(table: t.tableName, connection: connection) { _ in
-                                                expectation.fulfill()
-                                            }
+                                            rowIndex += 1
                                         }
                                     }
                                 }
@@ -361,21 +373,25 @@ class TestColumnTypes: XCTestCase {
                                         XCTAssertEqual(result.success, true, "SELECT failed")
                                         XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
                                         XCTAssertNotNil(result.asResultSet, "SELECT returned no result set")
-
-                                        if let resultSet = result.asResultSet {
-                                            var index = 0
-                                            for row in resultSet.rows {
-                                                let selectedBlob1 = row[1] as! Data
-                                                XCTAssertEqual(selectedBlob1, insertedBlobs[index], "Inserted Data (\(insertedBlobs[index].hexString())) is not equal to selected Data (\(selectedBlob1.hexString()))")
-
-                                                index += 1
-                                            }
-
-                                            XCTAssertEqual(index, parametersArray.count, "Returned row count (\(index)) != Expected row count (\(parametersArray.count))")
+                                        guard let resultSet = result.asResultSet else {
+                                            XCTFail("resultSet nil when expected to be returned")
+                                            return
                                         }
+                                        var index = 0
+                                        resultSet.forEach() { row, error in
+                                            guard let row = row else {
+                                                // No more rows
+                                                XCTAssertEqual(index, parametersArray.count, "Returned row count (\(index)) != Expected row count (\(parametersArray.count))")
 
-                                        cleanUp(table: t.tableName, connection: connection) { _ in
-                                            expectation.fulfill()
+                                                cleanUp(table: t.tableName, connection: connection) { _ in
+                                                    return expectation.fulfill()
+                                                }
+                                                return
+                                            }
+                                            let selectedBlob1 = row[1] as! Data
+                                            XCTAssertEqual(selectedBlob1, insertedBlobs[index], "Inserted Data (\(insertedBlobs[index].hexString())) is not equal to selected Data (\(selectedBlob1.hexString()))")
+
+                                            index += 1
                                         }
                                     }
                                 }
