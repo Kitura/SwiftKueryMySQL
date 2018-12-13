@@ -190,10 +190,10 @@ class CommonUtils {
                 randomBinary = arc4random_uniform(2)
                 #endif
 
-                let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1, timeout: 10000)
+                let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1)
 
                 if characterSet != nil || randomBinary == 0 {
-                    pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, poolOptions: poolOptions)
+                    pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, connectionTimeout: 10000, poolOptions: poolOptions)
                 } else {
                     var urlString = "mysql://"
                     if let username = username, let password = password {

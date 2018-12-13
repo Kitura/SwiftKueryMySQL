@@ -125,13 +125,14 @@ public class MySQLConnection: Connection {
     /// - Parameter clientFlag: MySQL client options
     /// - Parameter characterSet: MySQL character set to use for the connection
     /// - Parameter reconnect: Enable or disable automatic reconnection to the server if the connection is found to have been lost
+    /// - Parameter connectionTimeout: An Int that specifies the timeout for making a connection to the database, used to set MYSQL_OPT_CONNECT_TIMEOUT
     /// - Parameter poolOptions: A set of `ConnectionOptions` to pass to the MySQL server.
     /// - Returns: `ConnectionPool` of `MySQLConnection`.
-    public static func createPool(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, reconnect: Bool = true, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
+    public static func createPool(host: String? = nil, user: String? = nil, password: String? = nil, database: String? = nil, port: Int? = nil, unixSocket: String? = nil, clientFlag: UInt = 0, characterSet: String? = nil, reconnect: Bool = true, connectionTimeout: Int = 0, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
 
         let connectionGenerator: () -> Connection? = {
             let connection = self.init(host: host, user: user, password: password, database: database, port: port, unixSocket: unixSocket, clientFlag: clientFlag, characterSet: characterSet, reconnect: reconnect)
-            connection.setTimeout(to: UInt(poolOptions.timeout))
+            connection.setTimeout(to: UInt(connectionTimeout))
             let result = connection.connectSync()
             return result.success ? connection : nil
         }
@@ -146,10 +147,11 @@ public class MySQLConnection: Connection {
     /// Create a MySQL connection pool.
     ///
     /// - Parameter url: A URL with the connection information. For example, mysql://user:password@host:port/database
+    /// - Parameter connectionTimeout: An Int that specifies the timeout for making a connection to the database, used to set MYSQL_OPT_CONNECT_TIMEOUT
     /// - Parameter poolOptions: A set of `ConnectionOptions` to pass to the MySQL server.
     /// - Returns: `ConnectionPool` of `MySQLConnection`.
-    public static func createPool(url: URL, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
-        return createPool(host: url.host, user: url.user, password: url.password, database: url.lastPathComponent, port: url.port, poolOptions: poolOptions)
+    public static func createPool(url: URL, connectionTimeout: Int = 0, poolOptions: ConnectionPoolOptions) -> ConnectionPool {
+        return createPool(host: url.host, user: url.user, password: url.password, database: url.lastPathComponent, port: url.port,connectionTimeout: connectionTimeout, poolOptions: poolOptions)
     }
 
     /// Establish a connection with the database.
