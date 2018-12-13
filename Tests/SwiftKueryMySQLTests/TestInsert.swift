@@ -161,34 +161,42 @@ class TestInsert: XCTestCase {
                         XCTAssertNotNil(rows, "INSERT returned no rows")
                         XCTAssertEqual(rows?.count, 1, "INSERT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
                         XCTAssertEqual(rows?[0][0] as? Int64, 1, "Incorrect autoIncrement ID value returned")
-                        if let resultSet = result.asResultSet {
-                            let titles = resultSet.titles
-                            XCTAssertEqual(titles[0], "a", "Incorrect id column name: \(titles[0]) instead of a")
-                        } else {
-                            XCTFail("Unable to retrieve column names")
+                        guard let resultSet = result.asResultSet else {
+                            XCTFail("resultSet nil when expected to be returned")
+                            return
                         }
-
-                        let i = Insert(into: t3, valueTuples: [(t3.b, 8)], returnID: true)
-                        executeQuery(query: i, connection: connection) { result, rows in
-                            XCTAssertEqual(result.success, true, "INSERT failed")
-                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
-                            XCTAssertNotNil(rows, "INSERT returned no rows")
-                            XCTAssertEqual(rows?.count, 1, "INSERT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
-                            XCTAssertEqual(rows?[0][0] as? Int64, 2, "Incorrect autoIncrement ID value returned")
-                            if let resultSet = result.asResultSet {
-                                let titles = resultSet.titles
-                                XCTAssertEqual(titles[0], "a", "Incorrect id column name: \(titles[0]) instead of a")
-                            } else {
+                        resultSet.getColumnTitles() { titles, error in
+                            guard let titles = titles else {
                                 XCTFail("Unable to retrieve column names")
+                                return
                             }
+                            XCTAssertEqual(titles[0], "a", "Incorrect id column name: \(titles[0]) instead of a")
+                            let i = Insert(into: t3, valueTuples: [(t3.b, 8)], returnID: true)
+                            executeQuery(query: i, connection: connection) { result, rows in
+                                XCTAssertEqual(result.success, true, "INSERT failed")
+                                XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+                                XCTAssertNotNil(rows, "INSERT returned no rows")
+                                XCTAssertEqual(rows?.count, 1, "INSERT returned wrong number of rows: \(String(describing: rows?.count)) instead of 1")
+                                XCTAssertEqual(rows?[0][0] as? Int64, 2, "Incorrect autoIncrement ID value returned")
+                                guard let resultSet = result.asResultSet else {
+                                    XCTFail("resultSet nil when expected to be returned")
+                                    return
+                                }
+                                resultSet.getColumnTitles() { titles, error in
+                                    guard let titles = titles else {
+                                        XCTFail("Unable to retrieve column names")
+                                        return
+                                    }
+                                    XCTAssertEqual(titles[0], "a", "Incorrect id column name: \(titles[0]) instead of a")
+                                    let drop = Raw(query: "DROP TABLE", table: t3)
+                                    executeQuery(query: drop, connection: connection) { result, rows in
+                                        XCTAssertEqual(result.success, true, "DROP TABLE failed")
+                                        XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
 
-                            let drop = Raw(query: "DROP TABLE", table: t3)
-                            executeQuery(query: drop, connection: connection) { result, rows in
-                                XCTAssertEqual(result.success, true, "DROP TABLE failed")
-                                XCTAssertNil(result.asError, "Error in DELETE: \(result.asError!)")
-
-                                cleanUp(table: t3.tableName, connection: connection) { _ in
-                                    expectation.fulfill()
+                                        cleanUp(table: t3.tableName, connection: connection) { _ in
+                                            expectation.fulfill()
+                                        }
+                                    }
                                 }
                             }
                         }
