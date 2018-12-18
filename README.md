@@ -108,26 +108,21 @@ let connection = MySQLConnection(url: URL(string: "mysql://\(user):\(password)@\
 ```
 You now have a connection that can be used to execute SQL queries created using Swift-Kuery.
 
-
-If you want to share a connection instance between multiple threads use `MySQLThreadSafeConnection` instead of `MySQLConnection`:
-```swift
-let connection = MySQLThreadSafeConnection(host: host, user: user, password: password, database: database,
-                                 port: port, characterSet: characterSet)
-```
-A MySQLThreadSafeConnection instance can be used to safely execute queries on multiple threads sharing the same connection.
-
-
 To connect to the server and execute a query:
 ```swift
-connection.connect() { error in
-   // if error is nil, connect() was successful
-   let query = Select(from: table)
-   connection.execute(query: query) { queryResult in
-      if let resultSet = queryResult.asResultSet {
-         for row in resultSet.rows {
-            // process each row
-         }
+connection.connect() { result in
+    guard result.success else {
+        // Connection unsuccessful
+        return
+    }
+    // Connection succesful
+    // Use connection
+    connection.execute(query: query) { queryResult in
+      guard queryResult.success else {
+          // Check for Error and handle
+          return
       }
+      // Process queryResult
    }
 }
 ```
