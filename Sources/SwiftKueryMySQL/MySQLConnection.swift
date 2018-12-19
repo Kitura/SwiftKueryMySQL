@@ -21,8 +21,8 @@ import Dispatch
 import CMySQL
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
-/// Instances of MySQLConnection are NOT thread-safe and should not be shared between threads.
-/// Use `MySQLThreadSafeConnection` to share connection instances between multiple threads.
+/// Connections should not be used to execute concurrent operations.
+/// To share connections across threads it is recommended to use a Connection pool with a max capacity of 1.
 public class MySQLConnection: Connection {
 
     private static let initOnce: () = {
