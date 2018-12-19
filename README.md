@@ -127,6 +127,23 @@ connection.connect() { result in
 }
 ```
 
+MySQLConnections should not be used to execute concurrent operations and therefore should not be shared across threads without proper synchronisation in place. It is recommended to use a connection pool containing a single connection if you wish to share a connection between multiple threads:
+
+```swift
+let poolOptions = ConnectionPoolOptions(initialCapacity: 1, maxCapacity: 1)
+pool = MySQLConnection.createPool(host: host, user: username, password: password, database: database, port: port, characterSet: characterSet, connectionTimeout: 10000, poolOptions: poolOptions)
+
+pool.getConnection() { connection, error in
+    guard let connection = connection else {
+        //Handle error
+        return
+    }
+    // Use connection
+}
+```
+
+The connection pool will ensure your connection is not used concurrently.
+
 View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
 
 
