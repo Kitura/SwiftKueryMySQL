@@ -22,7 +22,7 @@ import CMySQL
 
 /// An implementation of `SwiftKuery.Connection` protocol for MySQL.
 /// Connections should not be used to execute concurrent operations.
-/// To share connections across threads it is recommended to use a Connection pool with a max capacity of 1.
+/// To share connections across threads it is recommended to use a Connection pool.
 public class MySQLConnection: Connection {
 
     private static let initOnce: () = {
