@@ -127,6 +127,56 @@ connection.connect() { result in
 }
 ```
 
+MySQLConnections should not be used to execute concurrent operations and therefore should not be shared across threads without proper synchronisation in place. It is recommended to use a connection pool if you wish to share connections between multiple threads as the connection pool will ensure your connection is not used concurrently.  
+
+The example below creates a `ConnectionPool` containing a single connection and uses it to perform an insert on multiple threads:
+
+```swift
+var connectionPoolOptions = ConnectionPoolOptions.init(initialCapacity: 1, maxCapacity: 1)
+let connectionPool = MySQLConnection.createPool(host: host, user: user, password: password, database: database, port: port, characterSet: nil, connectionTimeout: 10000, poolOptions: connectionPoolOptions)
+.......
+let insertQuery = Insert(into: infos, values: "firstname", "surname", Parameter())
+let insertGroup = DispatchGroup()
+for age in 0 ... 5 {
+    insertGroup.enter()
+    connectionPool.getConnection() { connection, error in
+        guard let connection = connection else {
+            // Error Handling and return
+        }
+        connection.execute(query: insertQuery, parameters: [age]) { result in
+            guard result.success else {
+                // Error handling and return
+            }
+            print("Successfully inserted age: \(age)")
+            return insertGroup.leave()
+        }
+    }
+}
+insertGroup.wait()
+```
+When executing this example code you see output similar to:
+```
+Successfully inserted age: 0
+Successfully inserted age: 1
+Successfully inserted age: 2
+Successfully inserted age: 3
+Successfully inserted age: 4
+Successfully inserted age: 5
+```
+This is because the connection pool only allows that connection to be obtained by a single task. Because the connection pool is now empty, additional tasks are queued for later execution. As each task completes, the single connection is returned to the pool, and the next task is then invoked.
+
+In the example above, a DispatchGroup is used to pause the main thread until all of the tasks complete. This is necessary because the call to connectionPool.getConnection() returns immediately - the task is invoked later, once a connection is available.
+
+If you increase the capacity of the thread pool, then the order of inserts will be unpredictable, as they are able to execute concurrently on different connections:
+```
+Successfully inserted age: 0
+Successfully inserted age: 1
+Successfully inserted age: 3
+Successfully inserted age: 2
+Successfully inserted age: 5
+Successfully inserted age: 4
+```
+
 View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
 
 
