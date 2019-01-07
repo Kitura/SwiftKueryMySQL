@@ -127,7 +127,9 @@ connection.connect() { result in
 }
 ```
 
-MySQLConnections should not be used to execute concurrent operations and therefore should not be shared across threads without proper synchronisation in place. It is recommended to use a connection pool if you wish to share connections between multiple threads as the connection pool will ensure your connection is not used concurrently.The example below creates a `ConnectionPool` containing a single connection and uses it to perform an insert on multiple threads:
+MySQLConnections should not be used to execute concurrent operations and therefore should not be shared across threads without proper synchronisation in place. It is recommended to use a connection pool if you wish to share connections between multiple threads as the connection pool will ensure your connection is not used concurrently.  
+
+The example below creates a `ConnectionPool` containing a single connection and uses it to perform an insert on multiple threads:
 
 ```swift
 var connectionPoolOptions = ConnectionPoolOptions.init(initialCapacity: 1, maxCapacity: 1)
@@ -139,23 +141,13 @@ for age in 0 ... 5 {
     insertGroup.enter()
     connectionPool.getConnection() { connection, error in
         guard let connection = connection else {
-            guard let error = error else {
-                print("Unable to get connection: Unknown error")
-                return insertGroup.leave()
-            }
-            print ("Unable to get connection: \(error.localizedDescription)")
-            return insertGroup.leave()
+            // Error Handling and return
         }
         connection.execute(query: insertQuery, parameters: [age]) { result in
             guard result.success else {
-                guard let error = result.asError else {
-                    print("Unable to insert age: \(age): Unknown error")
-                    return insertGroup.leave()
-                }
-                print("Unable to age: \(age): \(error.localizedDescription)")
-                return insertGroup.leave()
+                // Error handling and return
             }
-            print("Succesfully inserted age: \(age)")
+            print("Successfully inserted age: \(age)")
             return insertGroup.leave()
         }
     }
@@ -164,21 +156,21 @@ insertGroup.wait()
 ```
 When executing this example code you see output similar to:
 ```
-Succesfully inserted age: 0
-Succesfully inserted age: 1
-Succesfully inserted age: 2
-Succesfully inserted age: 3
-Succesfully inserted age: 4
-Succesfully inserted age: 5
+Successfully inserted age: 0
+Successfully inserted age: 1
+Successfully inserted age: 2
+Successfully inserted age: 3
+Successfully inserted age: 4
+Successfully inserted age: 5
 ```
 This is because the single connection pool only allows a single thread at a time to obtain the connection. If you edit the maximum capacity of the thread pool the ordering of inserts is more random as they occur concurrently on different connections:
 ```
-Succesfully inserted age: 0
-Succesfully inserted age: 1
-Succesfully inserted age: 3
-Succesfully inserted age: 2
-Succesfully inserted age: 5
-Succesfully inserted age: 4
+Successfully inserted age: 0
+Successfully inserted age: 1
+Successfully inserted age: 3
+Successfully inserted age: 2
+Successfully inserted age: 5
+Successfully inserted age: 4
 ```
 
 View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
