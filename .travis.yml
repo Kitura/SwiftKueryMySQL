@@ -116,7 +116,7 @@ matrix:
       osx_image: xcode10
       sudo: required
       env:
-        - MYSQL_VER=8
+        - MYSQL_VER=8 JAZZY_ELIGIBLE=true
     - os: osx
       osx_image: xcode10
       sudo: required
