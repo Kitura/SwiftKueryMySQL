@@ -163,7 +163,11 @@ Successfully inserted age: 3
 Successfully inserted age: 4
 Successfully inserted age: 5
 ```
-This is because the single connection pool only allows a single thread at a time to obtain the connection. If you edit the maximum capacity of the thread pool the ordering of inserts is more random as they occur concurrently on different connections:
+This is because the connection pool only allows that connection to be obtained by a single task. Because the connection pool is now empty, additional tasks are queued for later execution. As each task completes, the single connection is returned to the pool, and the next task is then invoked.
+
+In the example above, a DispatchGroup is used to pause the main thread until all of the tasks complete. This is necessary because the call to connectionPool.getConnection() returns immediately - the task is invoked later, once a connection is available.
+
+If you increase the capacity of the thread pool, then the order of inserts will be unpredictable, as they are able to execute concurrently on different connections:
 ```
 Successfully inserted age: 0
 Successfully inserted age: 1
