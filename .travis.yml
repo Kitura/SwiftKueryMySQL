@@ -98,7 +98,7 @@ matrix:
       env:
         - SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=5
     - os: osx
-      osx_image: xcode10
+      osx_image: xcode10.1
       sudo: required
       env:
         - MYSQL_VER=5
@@ -113,12 +113,12 @@ matrix:
       env:
         - SWIFT_SNAPSHOT=4.1.2 MYSQL_VER=8
     - os: osx
-      osx_image: xcode10
+      osx_image: xcode10.1
       sudo: required
       env:
         - MYSQL_VER=8
     - os: osx
-      osx_image: xcode10
+      osx_image: xcode10.1
       sudo: required
       env:
         - MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
