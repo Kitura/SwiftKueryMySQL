@@ -2,6 +2,8 @@
 
 set -o verbose
 
+MYSQL_V8_PACKAGE="mysql-apt-config_0.8.12-1_all.deb"
+
 if [ -n "${DOCKER_IMAGE}" ]; then
 
     docker pull ${DOCKER_IMAGE}
@@ -22,10 +24,10 @@ else
         else
             sudo -E apt-get install -y gnupg
             cd /tmp
-            wget https://dev.mysql.com/get/mysql-apt-config_0.8.10-1_all.deb
+            wget https://dev.mysql.com/get/${MYSQL_V8_PACKAGE}
             cd -
             sudo -E echo mysql-apt-config mysql-apt-config/select-server select mysql-8.0 | debconf-set-selections
-            sudo -E dpkg -i /tmp/mysql-apt-config_0.8.10-1_all.deb
+            sudo -E dpkg -i /tmp/${MYSQL_V8_PACKAGE}
             sudo -E echo mysql-community-server mysql-community-server/root-pass password | debconf-set-selections
             sudo -E apt-get update -y
             sudo -E apt-get install -y pkg-config
