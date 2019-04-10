@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017,2108,2019
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import CMySQL
 
 /// MySQL implementation for prepared statements.
 public class MySQLPreparedStatement: PreparedStatement {
-    internal(set) var statement: UnsafeMutablePointer<MYSQL_STMT>?
+    var statement: UnsafeMutablePointer<MYSQL_STMT>?
     internal let query: Query?
 
     private var binds = [MYSQL_BIND]()
