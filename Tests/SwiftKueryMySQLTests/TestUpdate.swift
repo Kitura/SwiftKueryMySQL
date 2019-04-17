@@ -157,8 +157,9 @@ class TestUpdate: XCTestCase {
                                     XCTAssertEqual(result.success, true, "SELECT failed")
                                     XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
                                     XCTAssertNotNil(rows, "Expected rows but none returned")
-                                    XCTAssertNil(rows?[0][0], "Non nil value, expecting nil but returned \(String(describing: rows?[0][0]))")
-                                    XCTAssertNil(rows?[3][0], "Non nil value, expecting nil but returned \(String(describing: rows?[3][0]))")
+                                    for row in rows! {
+                                        XCTAssertNotEqual(row[0] as? String, "apple", "Row returned with \"apple\" instead of expected value \"nil\"")
+                                    }
 
                                     expectation.fulfill()
                                 }
