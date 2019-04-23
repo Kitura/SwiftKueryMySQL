@@ -198,9 +198,9 @@ class TestColumnTypes: XCTestCase {
                                                                 XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                                             }
                                                         } else if inserted == nil {
-                                                            XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                                            XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(String(describing: index))")
                                                         } else {
-                                                            XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
+                                                            XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(String(describing: index))")
                                                         }
                                                     }
                                                     rowIndex += 1
@@ -265,9 +265,9 @@ class TestColumnTypes: XCTestCase {
                                                         XCTAssertEqual(String(describing: inserted), String(describing: selected), "Column \(columnIndex+1) inserted value (\(inserted)) (type: \(type(of: inserted))) != selected value (\(selected)) (type: \(type(of: selected)))")
                                                     }
                                                 } else if inserted == nil {
-                                                    XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(index)")
+                                                    XCTAssertNil(selected, "value: \(String(describing: selected)) selected instead of inserted value: nil for column \(String(describing: index))")
                                                 } else {
-                                                    XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(index)")
+                                                    XCTFail("nil value selected instead of inserted value: \(String(describing: inserted)) for column \(String(describing: index))")
                                                 }
                                             }
                                             rowIndex += 1
