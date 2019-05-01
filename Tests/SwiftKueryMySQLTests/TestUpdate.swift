@@ -1,5 +1,5 @@
 /**
- Copyright IBM Corporation 2017
+ Copyright IBM Corporation 2017, 2018
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ class TestUpdate: XCTestCase {
     static var allTests: [(String, (TestUpdate) -> () throws -> Void)] {
         return [
             ("testUpdateAndDelete", testUpdateAndDelete),
+            ("testUpdateNilValue", testUpdateNilValue),
         ]
     }
 
@@ -115,6 +116,53 @@ class TestUpdate: XCTestCase {
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    func testUpdateNilValue() {
+        let t = MyTable()
+
+        let pool = CommonUtils.sharedInstance.getConnectionPool()
+        performTest(asyncTasks: { expectation in
+
+            pool.getConnection { connection, error in
+                guard let connection = connection else {
+                    XCTFail("Failed to get connection")
+                    return
+                }
+                cleanUp(table: t.tableName, connection: connection) { _ in
+
+                    executeRawQuery("CREATE TABLE " +  packName(t.tableName) + " (a varchar(40), b integer)", connection: connection) { result, rows in
+                        XCTAssertEqual(result.success, true, "CREATE TABLE failed")
+                        XCTAssertNil(result.asError, "Error in CREATE TABLE: \(result.asError!)")
+
+                        let insert = Insert(into: t, rows: [["apple", 10], ["apricot", 3], ["banana", 17], ["apple", 17], ["banana", -7], ["banana", 27]])
+                        executeQuery(query: insert, connection: connection) { result, rows in
+                            XCTAssertEqual(result.success, true, "INSERT failed")
+                            XCTAssertNil(result.asError, "Error in INSERT: \(result.asError!)")
+
+                            let nilString: String? = nil
+                            let update = Update(t, set:[(t.a, nilString as Any)], where: t.a == "apple")
+                            executeQuery(query: update, connection: connection) { result, rows in
+                                XCTAssertEqual(result.success, true, "UPDATE failed")
+                                XCTAssertNil(result.asError, "Error in UPDATE: \(result.asError!)")
+
+                                let select = Select(from: t)
+                                executeQuery(query: select, connection: connection) { result, rows in
+                                    XCTAssertEqual(result.success, true, "SELECT failed")
+                                    XCTAssertNil(result.asError, "Error in SELECT: \(result.asError!)")
+                                    XCTAssertNotNil(rows, "Expected rows but none returned")
+                                    for row in rows! {
+                                        XCTAssertNotEqual(row[0] as? String, "apple", "Row returned with \"apple\" instead of expected value \"nil\"")
+                                    }
+
+                                    expectation.fulfill()
                                 }
                             }
                         }
