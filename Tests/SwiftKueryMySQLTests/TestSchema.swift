@@ -42,7 +42,7 @@ class TestSchema: XCTestCase {
     class MyTable: Table {
         let a = Column("a", Varchar.self, length: 10, defaultValue: "qiwi", collate: "utf8_general_ci")
         let b = Column("b", Int32.self, autoIncrement: true, primaryKey: true)
-        let c = Column("c", Double.self, defaultValue: 4.95, check: "c > 0")
+        let c = Column("myCcol", Double.self, defaultValue: 4.95, check: "myCcol > 0")
 
         let tableName = "MyTable" + tableNameSuffix
     }
@@ -50,7 +50,7 @@ class TestSchema: XCTestCase {
     class MyNewTable: Table {
         let a = Column("a", Varchar.self, length: 10, defaultValue: "qiwi")
         let b = Column("b", Int32.self, autoIncrement: true, primaryKey: true)
-        let c = Column("c", Double.self, defaultValue: 4.95)
+        let c = Column("myCcol", Double.self, defaultValue: 4.95)
         let d = Column("d", Int32.self, defaultValue: 123)
 
         let tableName = "MyNewTable" + tableNameSuffix
@@ -97,7 +97,7 @@ class TestSchema: XCTestCase {
                                         XCTAssertEqual(titles.count, 3, "SELECT returned wrong number of titles")
                                         XCTAssertEqual(titles[0], "a", "Wrong column name for column 0")
                                         XCTAssertEqual(titles[1], "b", "Wrong column name for column 1")
-                                        XCTAssertEqual(titles[2], "c", "Wrong column name for column 2")
+                                        XCTAssertEqual(titles[2], "myCcol", "Wrong column name for column 2")
                                         XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows")
                                         if let row = rows?.first {
                                             XCTAssertEqual(row.count, 3, "SELECT returned wrong number of columns")
@@ -145,7 +145,7 @@ class TestSchema: XCTestCase {
                                                                     XCTAssertEqual(titles.count, 4, "SELECT returned wrong number of titles")
                                                                     XCTAssertEqual(titles[0], "a", "Wrong column name for column 0")
                                                                     XCTAssertEqual(titles[1], "b", "Wrong column name for column 1")
-                                                                    XCTAssertEqual(titles[2], "c", "Wrong column name for column 2")
+                                                                    XCTAssertEqual(titles[2], "myCcol", "Wrong column name for column 2")
                                                                     XCTAssertEqual(titles[3], "d", "Wrong column name for column 3")
                                                                     XCTAssertEqual(rows?.count, 1, "SELECT returned wrong number of rows")
                                                                     if let row = rows?.first {
