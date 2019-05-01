@@ -656,7 +656,7 @@ class MySQLColumnBuilder: ColumnCreator {
             result += " DEFAULT " + packedType
         }
         if let checkExpression = column.checkExpression {
-            result += checkExpression.contains(column.name) ? " CHECK (" + checkExpression.replacingOccurrences(of: column.name, with: "\"\(column.name)\"") + ")" : " CHECK (" + checkExpression + ")"
+            result += " CHECK (" + checkExpression + ")"
         }
         if let collate = column.collate {
             result += " COLLATE \"" + collate + "\""
