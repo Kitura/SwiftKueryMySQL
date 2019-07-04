@@ -98,14 +98,15 @@ matrix:
       osx_image: xcode10.2
       sudo: required
       env: MYSQL_VER=8
-    - os: osx
-      osx_image: xcode10.2
-      sudo: required
-      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=5
-    - os: osx
-      osx_image: xcode10.2
-      sudo: required
-      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=8
+# Pending Travis Xcode 11 image
+#    - os: osx
+#      osx_image: xcode11
+#      sudo: required
+#      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=5
+#    - os: osx
+#      osx_image: xcode11
+#      sudo: required
+#      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=8
 
 script:
   - ./build.sh
