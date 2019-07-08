@@ -18,62 +18,62 @@ matrix:
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:4.0.3 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5
+      env: DOCKER_IMAGE=swift:4.0.3 SWIFT_SNAPSHOT=4.0.3 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:4.1.3 SWIFT_SNAPSHOT=4.1.3 MYSQL_VER=5
+      env: DOCKER_IMAGE=swift:4.1.3 SWIFT_SNAPSHOT=4.1.3 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:4.2.4 SWIFT_SNAPSHOT=4.2.4 MYSQL_VER=5
+      env: DOCKER_IMAGE=swift:4.2.4 SWIFT_SNAPSHOT=4.2.4 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:4.2.4 SWIFT_SNAPSHOT=4.2.4 MYSQL_VER=8
+      env: DOCKER_IMAGE=swift:4.2.4 SWIFT_SNAPSHOT=4.2.4 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=5
+      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=8
+      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=5
+      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=8
+      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
+      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
+      env: DOCKER_IMAGE=swift:5.0.1-xenial MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
+      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT
+      env: DOCKER_IMAGE=swift:5.0.1 MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: osx
       osx_image: xcode9.2
       sudo: required
@@ -108,5 +108,8 @@ matrix:
 #      sudo: required
 #      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=8
 
+before_install:
+  - git clone https://github.com/IBM-Swift/Package-Builder.git
+
 script:
-  - ./build.sh
+- ./Package-Builder/build-package.sh -projectDir $TRAVIS_BUILD_DIR

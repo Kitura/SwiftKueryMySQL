@@ -1,0 +1,12 @@
+if [[ $MYSQL_VER == 5 ]]; then
+    mysql --version || { brew update && brew install mysql@5.7 && brew link mysql@5.7 --force && mysql.server start && mysql --version; }
+else
+    mysql --version || { brew update && brew install mysql && mysql.server start && mysql --version; }
+fi
+
+mysql_upgrade -uroot || echo "No need to upgrade"
+mysql -uroot -e "CREATE USER 'swift'@'localhost' IDENTIFIED BY 'kuery';"
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test;"
+mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
+
+swift build
