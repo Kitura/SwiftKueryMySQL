@@ -108,9 +108,6 @@ matrix:
 #      sudo: required
 #      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=8
 
-# script:
-#  - ./build.sh
-
 before_install:
   - git clone https://github.com/IBM-Swift/Package-Builder.git
 
