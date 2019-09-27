@@ -33,47 +33,27 @@ matrix:
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:4.2.4 SWIFT_SNAPSHOT=4.2.4 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
+      env: DOCKER_IMAGE=swift:5.0.3-xenial SWIFT_SNAPSHOT=5.0.3 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.2-xenial MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
+      env: DOCKER_IMAGE=swift:5.0.3-xenial SWIFT_SNAPSHOT=5.0.3 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.2-xenial MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
+      env: DOCKER_IMAGE=swift:5.1 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.2 MYSQL_VER=5 DOCKER_ENVIRONMENT="MYSQL_VER"
+      env: DOCKER_IMAGE=swift:5.1 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: linux
       dist: xenial
       sudo: required
       services: docker
-      env: DOCKER_IMAGE=swift:5.0.2 MYSQL_VER=8 DOCKER_ENVIRONMENT="MYSQL_VER"
-    - os: linux
-      dist: xenial
-      sudo: required
-      services: docker
-      env: DOCKER_IMAGE=swift:5.0.2-xenial MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
-    - os: linux
-      dist: xenial
-      sudo: required
-      services: docker
-      env: DOCKER_IMAGE=swift:5.0.2-xenial MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
-    - os: linux
-      dist: xenial
-      sudo: required
-      services: docker
-      env: DOCKER_IMAGE=swift:5.0.2 MYSQL_VER=5 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
-    - os: linux
-      dist: xenial
-      sudo: required
-      services: docker
-      env: DOCKER_IMAGE=swift:5.0.2 MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
+      env: DOCKER_IMAGE=swift:5.1 MYSQL_VER=8 SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT DOCKER_ENVIRONMENT="MYSQL_VER"
     - os: osx
       osx_image: xcode9.2
       sudo: required
@@ -87,10 +67,6 @@ matrix:
       sudo: required
       env: MYSQL_VER=5 SWIFT_SNAPSHOT=4.2.1
     - os: osx
-      osx_image: xcode10.1
-      sudo: required
-      env: MYSQL_VER=8 SWIFT_SNAPSHOT=4.2.1
-    - os: osx
       osx_image: xcode10.2
       sudo: required
       env: MYSQL_VER=5 SWIFT_SNAPSHOT=5.0.1 JAZZY_ELIGIBLE=true
@@ -101,7 +77,11 @@ matrix:
     - os: osx
       osx_image: xcode11
       sudo: required
-      env: SWIFT_SNAPSHOT=$SWIFT_DEVELOPMENT_SNAPSHOT MYSQL_VER=5
+      env: MYSQL_VER=5
+    - os: osx
+      osx_image: xcode11
+      sudo: required
+      env: MYSQL_VER=8
     - os: osx
       osx_image: xcode11
       sudo: required
