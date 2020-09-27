@@ -29,7 +29,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        //.package(url: "https://github.com/itura/Swift-Kuery.git", from: "3.1.0"),
+        //.package(url: "https://github.com/Kitura/Swift-Kuery.git", from: "3.1.0"),
         .package(url: "https://github.com/Kitura/Swift-Kuery.git", .branch("master")),
     ],
     targets: [
