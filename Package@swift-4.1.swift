@@ -29,7 +29,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/IBM-Swift/CMySQL.git", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/IBM-Swift/CMySQL.git", .upToNextMinor(from: "0.2.200")),
         //.package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", from: "3.1.0"),
         .package(url: "https://github.com/IBM-Swift/Swift-Kuery.git", .branch("master")),
     ],
