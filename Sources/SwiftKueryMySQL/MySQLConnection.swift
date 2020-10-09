@@ -59,7 +59,9 @@ public class MySQLConnection: Connection {
         let queryBuilder = QueryBuilder(addNumbersToParameters: false,
                                         anyOnSubquerySupported: true, columnBuilder: MySQLColumnBuilder(),
                                         dropIndexRequiresOnTableName: true,
-                                        dateFormatter: MySQLConnection.queryBuilderDateFormatter)
+                                        dateFormatter: MySQLConnection.queryBuilderDateFormatter,
+                                        supportsUnsignedIntegers: true,
+                                        supportsTinyInt: true)
 
         queryBuilder.updateSubstitutions([
             QueryBuilder.QuerySubstitutionNames.len: "LENGTH",

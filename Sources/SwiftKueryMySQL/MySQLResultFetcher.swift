@@ -184,7 +184,11 @@ public class MySQLResultFetcher: ResultFetcher {
         var bind = MYSQL_BIND()
         bind.buffer_type = field.type
         bind.buffer_length = UInt(size)
-        bind.is_unsigned = mysql_false()
+        if field.flags & UInt32(UNSIGNED_FLAG) == UInt32(UNSIGNED_FLAG) {
+            bind.is_unsigned = mysql_true()
+        } else {
+            bind.is_unsigned = mysql_false()
+        }
 
         #if swift(>=4.1)
         bind.buffer = UnsafeMutableRawPointer.allocate(byteCount: size, alignment: 1)
@@ -251,14 +255,30 @@ public class MySQLResultFetcher: ResultFetcher {
             let type = bind.buffer_type
             switch type {
             case MYSQL_TYPE_TINY:
-                row.append(buffer.load(as: Int8.self))
+                if bind.is_unsigned == 1 {
+                    row.append(buffer.load(as: UInt8.self))
+                } else {
+                    row.append(buffer.load(as: Int8.self))
+                }
             case MYSQL_TYPE_SHORT:
-                row.append(buffer.load(as: Int16.self))
+                if bind.is_unsigned == 1 {
+                    row.append(buffer.load(as: UInt16.self))
+                } else {
+                    row.append(buffer.load(as: Int16.self))
+                }
             case MYSQL_TYPE_INT24,
                  MYSQL_TYPE_LONG:
-                row.append(buffer.load(as: Int32.self))
+                if bind.is_unsigned == 1 {
+                    row.append(buffer.load(as: UInt32.self))
+                } else {
+                    row.append(buffer.load(as: Int32.self))
+                }
             case MYSQL_TYPE_LONGLONG:
-                row.append(buffer.load(as: Int64.self))
+                if bind.is_unsigned == 1 {
+                    row.append(buffer.load(as: UInt64.self))
+                } else {
+                    row.append(buffer.load(as: Int64.self))
+                }
             case MYSQL_TYPE_FLOAT:
                 row.append(buffer.load(as: Float.self))
             case MYSQL_TYPE_DOUBLE:
