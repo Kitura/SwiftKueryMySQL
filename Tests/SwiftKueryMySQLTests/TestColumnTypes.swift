@@ -301,7 +301,7 @@ class TestColumnTypes: XCTestCase {
 
                         let rawInsert = "INSERT INTO " + packName(t.tableName) + " (idCol, randomCol) VALUES (?, ?)"
 
-                        let unhandledParameter = URL(string: "http://www.kitura.io")!
+                        let unhandledParameter = URL(string: "https://www.kitura.dev")!
 
                         executeRawQueryWithParameters(rawInsert, connection: connection, parameters: [1, unhandledParameter]) { result, rows in
                             XCTAssertEqual(result.success, true, "INSERT failed")

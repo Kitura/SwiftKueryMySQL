@@ -1,28 +1,28 @@
 <p align="center">
-    <a href="http://kitura.io/">
-        <img src="https://raw.githubusercontent.com/IBM-Swift/Kitura/master/Sources/Kitura/resources/kitura-bird.svg?sanitize=true" height="100" alt="Kitura">
+    <a href="https://www.kitura.dev">
+        <img src="https://raw.githubusercontent.com/Kitura/Kitura/master/Sources/Kitura/resources/kitura-bird.svg?sanitize=true" height="100" alt="Kitura">
     </a>
 </p>
 
 
 <p align="center">
-    <a href="https://ibm-swift.github.io/SwiftKueryMySQL/index.html">
+    <a href="https://kitura.github.io/SwiftKueryMySQL/index.html">
     <img src="https://img.shields.io/badge/apidoc-SwiftKueryMySQL-1FBCE4.svg?style=flat" alt="APIDoc">
     </a>
-    <a href="https://travis-ci.org/IBM-Swift/SwiftKueryMySQL">
-    <img src="https://travis-ci.org/IBM-Swift/SwiftKueryMySQL.svg?branch=master" alt="Build Status - Master">
+    <a href="https://travis-ci.org/Kitura/SwiftKueryMySQL">
+    <img src="https://travis-ci.org/Kitura/SwiftKueryMySQL.svg?branch=master" alt="Build Status - Master">
     </a>
     <img src="https://img.shields.io/badge/os-macOS-green.svg?style=flat" alt="macOS">
     <img src="https://img.shields.io/badge/os-linux-green.svg?style=flat" alt="Linux">
     <img src="https://img.shields.io/badge/license-Apache2-blue.svg?style=flat" alt="Apache 2">
-    <a href="http://swift-at-ibm-slack.mybluemix.net/">
+    <a href="https://slack.kitura.dev">
     <img src="http://swift-at-ibm-slack.mybluemix.net/badge.svg" alt="Slack Status">
     </a>
 </p>
 
 # SwiftKueryMySQL
 
-[MySQL](https://dev.mysql.com/) plugin for the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.
+[MySQL](https://dev.mysql.com/) plugin for the [Swift-Kuery](https://github.com/Kitura/Swift-Kuery) framework. It enables you to use Swift-Kuery to manipulate data in a MySQL database.
 
 ## Swift version
 The latest version of SwiftKueryMySQL requires **Swift 4.0 or newer**. You can download this version of the Swift binaries by following this [link](https://swift.org/download/). Compatibility with other Swift versions is not guaranteed.
@@ -62,10 +62,10 @@ swift test -Xcc -I/usr/include/mysql/
 
 #### Add dependencies
 
-Add the `SwiftKueryMySQL` package to the dependencies within your application’s `Package.swift` file. Substitute `"x.x.x"` with the latest `SwiftKueryMySQL` [release](https://github.com/IBM-Swift/SwiftKueryMySQL/releases).
+Add the `SwiftKueryMySQL` package to the dependencies within your application’s `Package.swift` file. Substitute `"x.x.x"` with the latest `SwiftKueryMySQL` [release](https://github.com/Kitura/SwiftKueryMySQL/releases).
 
 ```swift
-.package(url: "https://github.com/IBM-Swift/SwiftKueryMySQL.git", from: "x.x.x")
+.package(url: "https://github.com/Kitura/SwiftKueryMySQL.git", from: "x.x.x")
 ```
 
 Add `SwiftKueryMySQL` to your target's dependencies:
@@ -177,7 +177,7 @@ Successfully inserted age: 5
 Successfully inserted age: 4
 ```
 
-View the [Swift-Kuery](https://github.com/IBM-Swift/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
+View the [Swift-Kuery](https://github.com/Kitura/Swift-Kuery) documentation for detailed information on using the Swift-Kuery framework.
 
 
 ## For testing purposes - MySQL test setup
@@ -191,11 +191,11 @@ mysql -uroot -e "GRANT ALL ON test.* TO 'swift'@'localhost';"
 ```
 
 ## API Documentation
-For more information visit our [API reference](https://ibm-swift.github.io/SwiftKueryMySQL/index.html).
+For more information visit our [API reference](https://kitura.github.io/SwiftKueryMySQL/index.html).
 
 ## Community
 
-We love to talk server-side Swift, and Kitura. Join our [Slack](http://swift-at-ibm-slack.mybluemix.net/) to meet the team!
+We love to talk server-side Swift, and Kitura. Join our [Slack](https://slack.kitura.dev) to meet the team!
 
 ## Deployment via Cloud Foundry
 
@@ -208,4 +208,4 @@ $ cat .swift-build-options-linux
 These flags tell the compiler where to find the MySQL header files required to build the CMySQL library.
 
 ## License
-This library is licensed under Apache 2.0. Full license text is available in [LICENSE](https://github.com/IBM-Swift/SwiftKueryMySQL/blob/master/LICENSE.txt).
+This library is licensed under Apache 2.0. Full license text is available in [LICENSE](https://github.com/Kitura/SwiftKueryMySQL/blob/master/LICENSE.txt).
